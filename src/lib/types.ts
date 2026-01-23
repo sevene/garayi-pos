@@ -11,15 +11,16 @@ export interface Product {
     stock?: number;
 }
 
-export interface Service {
+export interface CarwashService {
     _id: string;
     name: string;
-    servicePrice: number;
-    category: string | Category;
-    durationMinutes?: number;
     description?: string;
-    variants?: { name: string; price: number }[];
-    showInPos?: boolean;
+    category?: string | Category;
+    // Carwash specific pricing
+    price_sedan: number;
+    price_suv: number;
+    price_truck: number;
+    duration_minutes: number;
 }
 
 export interface Category {
@@ -28,6 +29,6 @@ export interface Category {
 }
 
 // Helper guard
-export function isService(item: Product | Service): item is Service {
-    return 'servicePrice' in item;
+export function isCarwashService(item: Product | CarwashService): item is CarwashService {
+    return 'price_sedan' in item;
 }

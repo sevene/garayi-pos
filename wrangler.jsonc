@@ -9,8 +9,8 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "garayi-db",
-			"database_id": "e09c4668-5ba6-4d7d-99c5-5cc3b27df633"
+			"database_name": "garayi-carwash",
+			"database_id": "807f35e3-1f47-4d8b-9ea3-c132c8826b0b"
 		}
 	]
 }

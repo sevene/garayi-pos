@@ -11,15 +11,47 @@ async function getData() {
     try {
         const { env } = getRequestContext();
         const db = env.DB;
-        const { results } = await db.prepare('SELECT * FROM products ORDER BY name ASC').all();
+        const { results } = await db.prepare(`
+            SELECT
+                id as _id,
+                name,
+                sku,
+                price_sedan,
+                price_suv,
+                price_truck,
+                category,
+                duration_minutes
+            FROM products
+            ORDER BY name ASC
+        `).all();
         return results as any[];
-    } catch {
+    } catch (e) {
+        console.error(e);
         return [];
     }
 }
 
 export default async function Page() {
-    const products = await getData();
+    const data = await getData();
+
+    // In our new schema, anything with 'category'='Wash' or 'Detail' is a Service
+    const services = data.filter(i => ['Wash', 'Detail'].includes(i.category))
+        .map(i => ({
+            ...i,
+            _id: String(i._id),
+            // Ensure numeric types
+            price_sedan: Number(i.price_sedan),
+            price_suv: Number(i.price_suv),
+            price_truck: Number(i.price_truck),
+            duration_minutes: Number(i.duration_minutes)
+        }));
+
+    const products = data.filter(i => !['Wash', 'Detail'].includes(i.category))
+        .map(i => ({
+            ...i,
+            _id: String(i._id),
+            price: Number(i.price_sedan) // Fallback for simple products
+        }));
 
     return (
         <CartProvider>
@@ -28,11 +60,11 @@ export default async function Page() {
                 <div className="flex-1 h-full overflow-hidden">
                     <POSGrid
                         initialProducts={products}
-                        initialServices={[]}
+                        initialServices={services}
                         initialCategories={[
-                            { _id: '1', name: 'Coffee' },
-                            { _id: '2', name: 'Syrups' },
-                            { _id: '3', name: 'Equipment' }
+                            { _id: '1', name: 'Wash' },
+                            { _id: '2', name: 'Detail' },
+                            { _id: '3', name: 'Addon' }
                         ]}
                     />
                 </div>

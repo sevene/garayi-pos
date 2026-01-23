@@ -1,45 +1,45 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Service, Product, Category } from '@/lib/types';
+import { CarwashService, Product, Category, isCarwashService } from '@/lib/types';
 import { useCart } from '@/hooks/useCart';
-import { VariantSelector } from './VariantSelector';
+import { CarTypeSelector } from './CarTypeSelector';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useSettings } from '@/hooks/useSettings';
 
 interface POSGridProps {
-    initialServices: Service[];
+    initialServices: CarwashService[];
     initialProducts: Product[];
     initialCategories: Category[];
 }
 
-type POSItem = Service | Product;
+type POSItem = CarwashService | Product;
 
 export function POSGrid({ initialServices, initialProducts, initialCategories }: POSGridProps) {
     const { addItemToCart } = useCart();
     const { formatCurrency } = useSettings();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [selectedService, setSelectedService] = useState<CarwashService | null>(null);
 
     const allItems = useMemo(() => {
         return [...initialServices, ...initialProducts];
     }, [initialServices, initialProducts]);
 
     const handleItemClick = (item: POSItem) => {
-        if ('servicePrice' in item && item.variants && item.variants.length > 0) {
-            setSelectedService(item as Service);
+        if (isCarwashService(item)) {
+            setSelectedService(item);
         } else {
             addItemToCart(item as Product);
         }
     };
 
-    const addServiceToCart = (service: Service, variant?: { name: string; price: number }) => {
+    const addServiceToCart = (service: CarwashService, variant: { name: string; price: number }) => {
         const cartItem: Product = {
-            _id: variant ? `${service._id}-${variant.name}` : service._id,
-            name: variant ? `${service.name} - ${variant.name}` : service.name,
+            _id: `${service._id}-${variant.name}`,
+            name: `${service.name} (${variant.name})`,
             sku: 'SRV',
-            price: variant ? variant.price : service.servicePrice,
+            price: variant.price,
         };
         addItemToCart(cartItem);
         setSelectedService(null);
@@ -95,8 +95,9 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
             <div className="flex-1 overflow-y-auto p-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {visibleItems.map(item => {
-                        const isService = 'servicePrice' in item;
-                        const price = isService ? (item as Service).servicePrice : (item as Product).price;
+                        const isService = isCarwashService(item);
+                        // Show lowest price for service or regular price for product
+                        const price = isService ? (item as CarwashService).price_sedan : (item as Product).price;
                         return (
                             <button
                                 key={item._id}
@@ -106,8 +107,11 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                                 <div>
                                     <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-lime-700 transition-colors">{item.name}</h3>
                                     {!isService && <p className="text-xs text-gray-400 mt-1">{(item as Product).sku}</p>}
+                                    {isService && <p className="text-xs text-lime-600 mt-1 font-medium">Select Vehicle</p>}
                                 </div>
-                                <span className="text-lg font-bold text-gray-900">{formatCurrency(price)}</span>
+                                <span className="text-lg font-bold text-gray-900">
+                                    {isService ? 'from ' : ''}{formatCurrency(price)}
+                                </span>
                             </button>
                         );
                     })}
@@ -115,7 +119,7 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
             </div>
 
             {selectedService && (
-                <VariantSelector
+                <CarTypeSelector
                     service={selectedService}
                     onSelect={(v) => addServiceToCart(selectedService, v)}
                     onClose={() => setSelectedService(null)}
