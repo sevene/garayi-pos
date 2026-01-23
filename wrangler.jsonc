@@ -1,16 +1,16 @@
 {
-    "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "garayi-cloud",
-    "compatibility_date": "2024-09-23",
-    "compatibility_flags": [
-        "nodejs_compat"
-    ],
-    // "pages_build_output_dir": ".vercel/output/static",
-    "d1_databases": [
-        {
-            "binding": "DB",
-            "database_name": "garayi-db",
-            "database_id": "xxxxx-xxxxx-xxxxx"
-        }
-    ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "garayi-cloud",
+	"compatibility_date": "2024-09-23",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// "pages_build_output_dir": ".vercel/output/static",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "garayi-db",
+			"database_id": "e09c4668-5ba6-4d7d-99c5-5cc3b27df633"
+		}
+	]
 }
