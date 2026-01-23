@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         // In the carwash schema, we'll try to fetch from employees table
         // If it doesn't exist, we might return a mock or empty array until migration
         const { results } = await db.prepare('SELECT * FROM employees').all();

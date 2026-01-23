@@ -1,4 +1,4 @@
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { POSContent } from '@/components/pos/POSContent';
 import { MainNav } from '@/components/MainNav';
 
@@ -24,10 +24,10 @@ export default async function POSPage() {
     let employees: any[] = [];
 
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
 
         // 1. Fetch Categories (Static or DB?)
-        // Schema doesn't have categories table, assuming static for now or distinct from products
         categories = [
             { _id: 'cat_wash', name: 'Wash' },
             { _id: 'cat_detail', name: 'Detail' },
@@ -35,14 +35,11 @@ export default async function POSPage() {
         ];
 
         // 2. Fetch Products/Services
-        // In legacy: 'services' are wash/detail, 'products' are retail?
-        // Schema has 'products' table with 'category' column.
         const productsRes = await db.prepare('SELECT * FROM products').all();
         const allProducts = productsRes.results as unknown as DBProduct[];
 
         // Map DB result to Legacy Interface
         services = allProducts.map(p => {
-            // Simple mapping helper
             const catIdMap: Record<string, string> = {
                 'Wash': 'cat_wash',
                 'Detail': 'cat_detail',
@@ -57,7 +54,7 @@ export default async function POSPage() {
                 category: { _id: catId, name: p.category },
                 sku: 'SVC-' + p.id,
                 servicePrice: p.price_sedan,
-                price: p.price_sedan, // Default to sedan price for display
+                price: p.price_sedan,
                 prices: {
                     sedan: p.price_sedan,
                     suv: p.price_suv,
@@ -78,7 +75,7 @@ export default async function POSPage() {
             vehicleType: c.vehicle_type
         }));
 
-        // 4. Employees (Mock or Users)
+        // 4. Employees
         employees = [
             { _id: 'E001', name: 'Staff 1', role: 'Staff' }
         ];

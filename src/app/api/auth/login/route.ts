@@ -1,4 +1,4 @@
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword, createSession } from '@/lib/auth';
 
@@ -12,8 +12,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
         }
 
-        // In a real app, use bindings from request context
-        const db = (getRequestContext() as any).env.DB;
+        // Use OpenNext Cloudflare Context
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
 
         // Hash the input password
         const hashedPassword = await hashPassword(password);

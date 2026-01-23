@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         // Distinct categories from products table as a fallback or if no dedicated table
         const { results } = await db.prepare('SELECT DISTINCT category as name FROM products WHERE category IS NOT NULL').all();
 

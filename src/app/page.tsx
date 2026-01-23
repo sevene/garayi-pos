@@ -2,14 +2,14 @@ import React from 'react';
 import { POSGrid } from '@/components/pos/POSGrid';
 import { CartPanel } from '@/components/pos/CartPanel';
 import { CartProvider } from '@/hooks/useCart';
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export const runtime = 'edge';
 
 // We can fetch data server-side here
 async function getData() {
     try {
-        const { env } = getRequestContext();
+        const { env } = await getCloudflareContext();
         const db = env.DB;
         const { results } = await db.prepare(`
             SELECT

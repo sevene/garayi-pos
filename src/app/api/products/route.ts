@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         // Assuming 'products' table holds both services and retail products
         // We might filter by category here if needed, or return all
         const { results } = await db.prepare('SELECT * FROM products').all();

@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         const { results } = await db.prepare('SELECT * FROM expenses ORDER BY date DESC').all();
 
         return NextResponse.json(results.map((e: any) => ({

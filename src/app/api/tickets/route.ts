@@ -1,11 +1,10 @@
-export const runtime = 'edge';
-
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         // 'tickets' table exists in schema.sql
         // We might need to join with ticket_items, but let's start simple
         const { results } = await db.prepare('SELECT * FROM tickets WHERE status != ?').bind('PAID').all();
@@ -49,7 +48,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     try {
-        const db = getRequestContext().env.DB;
+        const { env } = await getCloudflareContext();
+        const db = env.DB;
         const body = await req.json() as any;
 
         // Insert Ticket
