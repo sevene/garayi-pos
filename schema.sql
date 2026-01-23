@@ -59,3 +59,23 @@ INSERT INTO products (name, sku, price_sedan, price_suv, price_truck, category, 
 ('Premium Wax', 'W002', 300.00, 400.00, 500.00, 'Wash', 60),
 ('Interior Detail', 'D001', 1500.00, 1800.00, 2200.00, 'Detail', 180),
 ('Engine Wash', 'A001', 250.00, 300.00, 350.00, 'Addon', 45);
+
+-- Create Users Table
+DROP TABLE IF EXISTS users;
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT DEFAULT 'admin',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Admin User
+-- Password is 'admin123' (hashed for demo purposes, in real app use robust hashing)
+-- For this demo we will use simple direct comparison or a known hash if strict
+-- To keep it simple for now, we will store a plain text password in the seed for the very first login logic to hashing it later,
+-- OR better, we simply assume the auth logic will verify against this.
+-- Let's use a placeholder hash for 'admin123' to be realistic.
+-- SHA-256('admin123') = 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
+INSERT INTO users (username, password_hash, role) VALUES
+('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');

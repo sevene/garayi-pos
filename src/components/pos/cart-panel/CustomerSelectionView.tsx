@@ -1,0 +1,187 @@
+import React, { useState, useMemo } from 'react';
+import { useCart } from '@/hooks/useCart';
+import { ChevronLeftIcon, MagnifyingGlassIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import CustomSelect from '../../ui/CustomSelect';
+
+interface CustomerSelectionViewProps {
+    onBack: () => void;
+}
+
+const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack }) => {
+    const {
+        customers,
+        currentCustomer,
+        setCustomer,
+        currentTicketName,
+        setCurrentTicketName,
+        employees,
+        selectedCrew,
+        toggleCrewMember
+    } = useCart();
+
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Filter customers
+    const filteredCustomers = useMemo(() => {
+        if (!searchTerm) return customers;
+        const lower = searchTerm.toLowerCase();
+        return customers.filter((c: any) =>
+            c.name.toLowerCase().includes(lower) ||
+            (c.contactInfo && c.contactInfo.includes(lower))
+        );
+    }, [searchTerm, customers]);
+
+    return (
+        <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-300">
+            {/* View Header */}
+            <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+                <button
+                    onClick={onBack}
+                    className="p-2 -ml-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                    <ChevronLeftIcon className="w-6 h-6" />
+                </button>
+                <h2 className="text-lg font-bold text-gray-800">Assign Customer</h2>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-4 border-b border-gray-100 bg-gray-50">
+                <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by name or mobile..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-lime-500 outline-none text-gray-700 bg-white shadow-sm transition-all"
+                        autoFocus
+                    />
+                </div>
+            </div>
+
+            {/* Settings Content */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+                {/* Active Customer Section (Top Pinned) */}
+                {currentCustomer && (
+                    <div className="p-4 border-b border-lime-100 bg-lime-50/50">
+                        <h3 className="text-xs font-bold text-lime-700 uppercase tracking-wider mb-2">Currently Assigned</h3>
+                        <div className="bg-white p-3 rounded-xl border border-lime-200 shadow-sm flex justify-between items-center">
+                            <div>
+                                <p className="font-bold text-gray-900">{currentCustomer.name}</p>
+                                <p className="text-xs text-gray-500">{currentCustomer.contactInfo || 'No contact info'}</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setCustomer(null);
+                                    setCurrentTicketName('New Order');
+                                }}
+                                className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                            >
+                                Unlink
+                            </button>
+                        </div>
+
+                        {/* Vehicle Selector for Current Customer */}
+                        {currentCustomer.cars && currentCustomer.cars.length > 0 && (
+                            <div className="mt-3">
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Selected Vehicle</label>
+                                <CustomSelect
+                                    options={currentCustomer.cars.map((car: any) => ({
+                                        label: `${car.plateNumber} - ${car.makeModel || 'Unknown'}`,
+                                        value: car.plateNumber
+                                    }))}
+                                    value={currentTicketName.includes(' - ') ? currentTicketName.split(' - ')[1] : currentCustomer.cars[0].plateNumber}
+                                    onChange={(plate) => {
+                                        const autoName = `${currentCustomer.name} - ${plate}`;
+                                        setCurrentTicketName(autoName);
+                                    }}
+                                    className="w-full"
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Crew Selection Section */}
+                {/* <div className="p-4 border-b border-gray-100">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Service Crew</h3>
+
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {employees.map((emp: any) => {
+                            const isSelected = selectedCrew.includes(emp._id);
+                            return (
+                                <button
+                                    key={emp._id}
+                                    onClick={() => toggleCrewMember(emp._id)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isSelected
+                                        ? 'bg-lime-600 text-white shadow-md shadow-lime-200'
+                                        : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+                                        }`}
+                                >
+                                    {emp.name}
+                                    {isSelected && <CheckCircleIcon className="w-4 h-4" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div> */}
+
+                {/* Customer List */}
+                <div className="p-2">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 py-2">All Customers</h3>
+                    <div className="space-y-1">
+                        {filteredCustomers.map((cust: any) => (
+                            <button
+                                key={cust._id}
+                                onClick={() => {
+                                    setCustomer(cust);
+                                    const firstCar = cust.cars && cust.cars.length > 0 ? cust.cars[0] : null;
+                                    const plateText = firstCar?.plateNumber || 'No Plate';
+                                    const autoName = `${cust.name} - ${plateText}`;
+                                    setCurrentTicketName(autoName);
+                                    // Optional: Go back immediately? Users usually prefer staying to verify or pick car.
+                                    // onBack();
+                                }}
+                                className={`w-full flex items-center p-3 rounded-xl transition-colors text-left group ${currentCustomer?._id === cust._id
+                                    ? 'bg-lime-50 border border-lime-200'
+                                    : 'hover:bg-gray-50 border border-transparent'
+                                    }`}
+                            >
+                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold mr-3 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                    {cust.name[0]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center">
+                                        <span className={`font-semibold ${currentCustomer?._id === cust._id ? 'text-lime-800' : 'text-gray-800'}`}>
+                                            {cust.name}
+                                        </span>
+                                        {currentCustomer?._id === cust._id && <CheckCircleIcon className="w-5 h-5 text-lime-600" />}
+                                    </div>
+                                    <p className="text-xs text-gray-500 truncate">{cust.contactInfo || 'No contact info'}</p>
+                                </div>
+                            </button>
+                        ))}
+
+                        {filteredCustomers.length === 0 && (
+                            <div className="text-center py-8 text-gray-400">
+                                No customers found.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Action */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <button
+                    onClick={onBack}
+                    className="w-full py-4 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 transition-all active:scale-[0.98]"
+                >
+                    Assign Customer
+                </button>
+            </div>
+        </div>
+    );
+};
+
+export default CustomerSelectionView;

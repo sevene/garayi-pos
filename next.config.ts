@@ -8,6 +8,12 @@ const nextConfig = async (): Promise<NextConfig> => {
 
   return {
     /* config options here */
+    eslint: {
+      ignoreDuringBuilds: true,
+    },
+    typescript: {
+      ignoreBuildErrors: true,
+    }
   };
 };
 

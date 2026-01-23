@@ -54,7 +54,7 @@ export default async function Page() {
         }));
 
     return (
-        <CartProvider>
+        <CartProvider initialCustomers={[]} initialEmployees={[]}>
             <main className="flex h-screen w-screen overflow-hidden bg-white text-gray-900 font-sans">
                 {/* Left: POS Grid */}
                 <div className="flex-1 h-full overflow-hidden">
@@ -62,9 +62,9 @@ export default async function Page() {
                         initialProducts={products}
                         initialServices={services}
                         initialCategories={[
-                            { _id: '1', name: 'Wash' },
-                            { _id: '2', name: 'Detail' },
-                            { _id: '3', name: 'Addon' }
+                            { _id: '1', name: 'Wash', active: true },
+                            { _id: '2', name: 'Detail', active: true },
+                            { _id: '3', name: 'Addon', active: true }
                         ]}
                     />
                 </div>

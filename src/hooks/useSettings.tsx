@@ -1,15 +1,72 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
+interface Settings {
+    storeName: string;
+    storeAddress: string;
+    currency: string;
+    taxRate: number;
+    enableNotifications: boolean;
+    receiptHeader: string;
+    receiptFooter: string;
+    printerName: string;
+    theme: string;
+}
+
 export const useSettings = () => {
-    // Default values for the PoC
-    const settings = {
-        currency: 'PHP',
-        taxRate: 0.12
-    };
+    const [settings, setSettings] = useState<Settings | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (!API_URL) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/settings`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSettings({
+                        storeName: data.name || '',
+                        storeAddress: data.address?.street || '',
+                        currency: data.currency || 'PHP',
+                        taxRate: data.tax_rate !== undefined ? Number(data.tax_rate) : 0.08,
+                        enableNotifications: data.settings?.enableNotifications ?? true,
+                        receiptHeader: data.receipt?.header || '',
+                        receiptFooter: data.receipt?.footer || '',
+                        printerName: data.receipt?.printerName || '',
+                        theme: data.settings?.theme || 'light'
+                    });
+                } else {
+                    setError('Failed to fetch settings');
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Error fetching settings');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSettings();
+    }, [API_URL]);
 
     const formatCurrency = (amount: number) => {
-        return `₱${amount.toFixed(2)}`;
+        const symbol = settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : '₱';
+        return `${symbol}${amount.toFixed(2)}`;
     };
 
-    return { settings, loading: false, error: null, formatCurrency };
+    const getCurrencySymbol = () => {
+        if (!settings) return '₱';
+        if (settings.currency === 'USD') return '$';
+        if (settings.currency === 'EUR') return '€';
+        return '₱'; // Default to Peso if unknown or PHP
+    };
+
+    return { settings, loading, error, formatCurrency, getCurrencySymbol };
 };

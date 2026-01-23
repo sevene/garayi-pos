@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".wrangler/**",
+    "worker-configuration.d.ts",
+    "node_modules/**"
   ]),
   {
     rules: {
