@@ -79,3 +79,42 @@ CREATE TABLE IF NOT EXISTS users (
 -- SHA-256('admin123') = 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
 INSERT INTO users (username, password_hash, role) VALUES
 ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');
+
+-- Create Employees Table
+CREATE TABLE IF NOT EXISTS employees (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  role TEXT,
+  phone TEXT,
+  salary_rate REAL,
+  salary_type TEXT, -- 'fixed', 'commission'
+  active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Expenses Table
+CREATE TABLE IF NOT EXISTS expenses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  amount REAL NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
+  date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed an employee
+INSERT INTO employees (name, role, salary_type) VALUES ('Staff 1', 'Staff', 'commission');
+
+-- Create Settings Table
+CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  name TEXT DEFAULT 'Garayi Carwash',
+  address TEXT,
+  currency TEXT DEFAULT 'PHP',
+  tax_rate REAL DEFAULT 0.08,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Initial Settings
+INSERT OR IGNORE INTO settings (id, name, currency) VALUES (1, 'Garayi Carwash', 'PHP');
+

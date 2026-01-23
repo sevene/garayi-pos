@@ -1,0 +1,407 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { TrashIcon, ArrowPathIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import CustomSelect from '@/components/ui/CustomSelect';
+import { useSettings } from '@/hooks/useSettings';
+import { toast } from 'sonner';
+import PageHeader from '@/components/admin/PageHeader';
+
+interface TicketItem {
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+}
+
+interface Ticket {
+    _id: string;
+    name: string;
+    status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+    items: TicketItem[];
+    total: number;
+    paymentMethod?: string;
+    createdAt: string;
+    updatedAt: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    customer?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    crew?: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    customerSnapshot?: any;
+}
+
+export default function AdminOrdersPage() {
+    const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Filter States
+    const [statusFilter, setStatusFilter] = useState<string>('ALL');
+    const [dateFilter, setDateFilter] = useState<string>('');
+
+    // Expanded State
+    const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+
+    const { settings, formatCurrency } = useSettings();
+    const taxRate = settings?.taxRate || 0;
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+    const fetchTickets = async () => {
+        if (!API_URL) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${API_URL}/tickets?all=true`);
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            const data = await res.json();
+            setTickets(data);
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load orders');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTickets();
+    }, []);
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+
+        try {
+            const res = await fetch(`${API_URL}/tickets/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete order');
+
+            // Remove from local state
+            setTickets(prev => prev.filter(t => t._id !== id));
+            toast.success('Order deleted successfully');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete order');
+        }
+    };
+
+    const toggleRow = (id: string) => {
+        setExpandedTickets(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const calculateTotal = (ticket: Ticket) => {
+        if (ticket.total) return ticket.total;
+        const subtotal = ticket.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+        const tax = subtotal * taxRate;
+        return subtotal + tax;
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleString();
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'COMPLETED': return 'bg-green-100 text-green-800';
+            case 'CANCELLED': return 'bg-red-100 text-red-800';
+            default: return 'bg-yellow-100 text-yellow-800';
+        }
+    };
+
+    // Filter Logic
+    const filteredTickets = useMemo(() => {
+        return tickets.filter(ticket => {
+            // Status Filter
+            if (statusFilter !== 'ALL' && (ticket.status || 'PENDING') !== statusFilter) {
+                return false;
+            }
+
+            // Date Filter (Matches YYYY-MM-DD)
+            if (dateFilter) {
+                const ticketDate = new Date(ticket.createdAt).toISOString().split('T')[0];
+                if (ticketDate !== dateFilter) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }, [tickets, statusFilter, dateFilter]);
+
+    return (
+        <div>
+            <div className="space-y-6 animate-in fade-in duration-1000 lg:px-6 lg:pb-6 flex flex-row justify-between items-center">
+                <PageHeader
+                    title="Orders Management"
+                    description="View and manage all customer orders"
+                />
+                <button
+                    onClick={fetchTickets}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                    <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </button>
+            </div>
+
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                    {error}
+                </div>
+            )}
+
+            {/* Filters Bar */}
+            <div className="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2 text-gray-500 mr-2">
+                    <FunnelIcon className="w-5 h-5" />
+                    <span className="font-medium">Filters:</span>
+                </div>
+
+                {/* Status Filter */}
+                <div className="w-48">
+                    <CustomSelect
+                        options={[
+                            { label: 'All Statuses', value: 'ALL' },
+                            { label: 'Pending', value: 'PENDING' },
+                            { label: 'Completed', value: 'COMPLETED' },
+                            { label: 'Cancelled', value: 'CANCELLED' }
+                        ]}
+                        value={statusFilter}
+                        onChange={(val) => setStatusFilter(val as string)}
+                        placeholder="Filter by Status"
+                    />
+                </div>
+
+                {/* Date Filter */}
+                <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 outline-none"
+                />
+
+                {/* Clear Filters */}
+                {(statusFilter !== 'ALL' || dateFilter) && (
+                    <button
+                        onClick={() => {
+                            setStatusFilter('ALL');
+                            setDateFilter('');
+                        }}
+                        className="text-sm text-red-500 hover:text-red-700 font-medium"
+                    >
+                        Clear Filters
+                    </button>
+                )}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-gray-600">
+                        <thead className="bg-gray-50 border-b border-gray-200 font-medium text-gray-900 uppercase tracking-wider">
+                            <tr>
+                                <th className="px-6 py-4">Name / Order ID</th>
+                                <th className="px-6 py-4 text-center">Date</th>
+                                <th className="px-6 py-4 text-center">Status</th>
+                                <th className="px-6 py-4 text-center">Payment</th>
+                                <th className="px-6 py-4 text-center">Items</th>
+                                <th className="px-6 py-4 text-right">Total</th>
+                                <th className="px-6 py-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {isLoading && tickets.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                        Loading orders...
+                                    </td>
+                                </tr>
+                            ) : filteredTickets.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                        No orders found matching your filters.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredTickets.map((ticket) => {
+                                    const isExpanded = expandedTickets.has(ticket._id);
+                                    return (
+                                        <React.Fragment key={ticket._id}>
+                                            <tr
+                                                onClick={() => toggleRow(ticket._id)}
+                                                className={`hover:bg-gray-50 transition-colors cursor-pointer ${isExpanded ? 'bg-gray-50' : ''}`}
+                                            >
+                                                <td className="px-6 py-4 flex flex-row gap-6 items-center">
+                                                    {isExpanded ? (
+                                                        <ChevronUpIcon className="w-4 h-4 text-gray-500" />
+                                                    ) : (
+                                                        <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                                                    )}
+                                                    <div>
+                                                        <div className="font-bold text-gray-900">{ticket.name || 'Unnamed Order'}</div>
+                                                        <div className="text-xs text-gray-500 font-medium">
+                                                            {ticket.customer ? (typeof ticket.customer === 'object' ? ticket.customer.name : 'Unknown Customer') : 'No Customer'}
+                                                        </div>
+                                                        <div className="text-xs text-gray-400 mt-0.5">{ticket._id}</div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    {formatDate(ticket.createdAt)}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(ticket.status || 'PENDING')}`}>
+                                                        {ticket.status || 'PENDING'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center text-sm font-medium text-gray-700">
+                                                    {ticket.paymentMethod || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="max-w-xs truncate">
+                                                        {ticket.items.length} items
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-bold text-gray-900">
+                                                    {formatCurrency(calculateTotal(ticket))}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        onClick={(e) => handleDelete(ticket._id, e)}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Delete Order"
+                                                    >
+                                                        <TrashIcon className="w-5 h-5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+
+                                            {/* Expanded Details Row */}
+                                            {isExpanded && (
+                                                <tr className="bg-gray-50">
+                                                    <td colSpan={7} className="px-6 py-4 border-t border-gray-100">
+                                                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+
+                                                            {/* Customer & Crew Details */}
+                                                            {(ticket.customer || (ticket.crew && ticket.crew.length > 0)) && (
+                                                                <div className="mb-6 grid grid-cols-2 gap-6 pb-6 border-b border-gray-100">
+                                                                    {/* Customer Info */}
+                                                                    {ticket.customer && (
+                                                                        <div>
+                                                                            <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer</h5>
+                                                                            <div className="text-sm font-semibold text-gray-800">
+                                                                                {typeof ticket.customer === 'object' ? ticket.customer.name : 'Unknown'}
+                                                                            </div>
+                                                                            {typeof ticket.customer === 'object' && ticket.customer.contactInfo && (
+                                                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                                                    {ticket.customer.contactInfo}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Car Details Priority: Snapshot -> First Car */}
+                                                                            {(() => {
+                                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                                                const car = ticket.customerSnapshot?.carDetails ||
+                                                                                    (typeof ticket.customer === 'object' && ticket.customer.cars && ticket.customer.cars.length > 0 ? ticket.customer.cars[0] : null);
+
+                                                                                if (car) {
+                                                                                    return (
+                                                                                        <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100 inline-block">
+                                                                                            <div className="text-xs font-bold text-gray-700">
+                                                                                                {car.makeModel || 'Unknown Model'} <span className="font-normal text-gray-500">• {car.color || 'No Color'}</span>
+                                                                                            </div>
+                                                                                            <div className="text-xs font-mono font-bold text-lime-700 bg-lime-50 border border-lime-200 rounded px-1.5 py-0.5 mt-1 inline-block">
+                                                                                                {car.plateNumber || 'NO PLATE'}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            })()}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Crew Info */}
+                                                                    {ticket.crew && ticket.crew.length > 0 && (
+                                                                        <div>
+                                                                            <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Assigned Crew ({ticket.crew.length})</h5>
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                {ticket.crew.map((c: any, i: number) => (
+                                                                                    <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lime-100 text-lime-800">
+                                                                                        {typeof c === 'object' ? c.name : 'ID: ' + c}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            <h4 className="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">Order Details</h4>
+                                                            <table className="w-full text-sm">
+                                                                <thead className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+                                                                    <tr>
+                                                                        <th className="py-2 px-3 text-left">Product</th>
+                                                                        <th className="py-2 px-3 text-center">Qty</th>
+                                                                        <th className="py-2 px-3 text-right">Unit Price</th>
+                                                                        <th className="py-2 px-3 text-right">Total</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-gray-100">
+                                                                    {ticket.items.map((item, idx) => (
+                                                                        <tr key={idx}>
+                                                                            <td className="py-2 px-3 text-gray-800">{item.productName}</td>
+                                                                            <td className="py-2 px-3 text-center text-gray-600">{item.quantity}</td>
+                                                                            <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
+                                                                            <td className="py-2 px-3 text-right font-medium text-gray-800">
+                                                                                {formatCurrency(item.unitPrice * item.quantity)}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                                <tfoot className="border-t border-gray-200">
+                                                                    {ticket.paymentMethod && (
+                                                                        <tr>
+                                                                            <td colSpan={3} className="py-2 px-3 text-right font-bold text-gray-600">Payment Method</td>
+                                                                            <td className="py-2 px-3 text-right font-bold text-lime-600">
+                                                                                {ticket.paymentMethod}
+                                                                            </td>
+                                                                        </tr>
+                                                                    )}
+                                                                    <tr>
+                                                                        <td colSpan={3} className="py-2 px-3 text-right font-bold text-gray-600">Subtotal</td>
+                                                                        <td className="py-2 px-3 text-right font-bold text-gray-800">
+                                                                            {formatCurrency(ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0))}
+                                                                        </td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td colSpan={3} className="py-1 px-3 text-right text-gray-500 text-xs">Tax ({Number((taxRate * 100).toFixed(2))}%)</td>
+                                                                        <td className="py-1 px-3 text-right text-gray-500 text-xs">
+                                                                            {formatCurrency(ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0) * taxRate)}
+                                                                        </td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}

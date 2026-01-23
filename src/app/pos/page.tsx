@@ -1,5 +1,6 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { POSContent } from '@/components/pos/POSContent';
+import { MainNav } from '@/components/MainNav';
 
 // We need to define interfaces since we are casting raw DB results
 interface DBProduct {
@@ -87,12 +88,15 @@ export default async function POSPage() {
     }
 
     return (
-        <POSContent
-            initialServices={services}
-            initialProducts={products}
-            initialCategories={categories}
-            initialCustomers={customers}
-            initialEmployees={employees}
-        />
+        <div className="flex flex-col h-screen w-screen overflow-hidden">
+            <MainNav />
+            <POSContent
+                initialServices={services}
+                initialProducts={products}
+                initialCategories={categories}
+                initialCustomers={customers}
+                initialEmployees={employees}
+            />
+        </div>
     );
 }
