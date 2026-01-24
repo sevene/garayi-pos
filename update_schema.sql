@@ -1,0 +1,6 @@
+ALTER TABLE products ADD COLUMN volume TEXT;
+ALTER TABLE products ADD COLUMN unit_type TEXT;
+ALTER TABLE products ADD COLUMN cost REAL DEFAULT 0;
+ALTER TABLE products ADD COLUMN stock_quantity INTEGER DEFAULT 0;
+ALTER TABLE products ADD COLUMN show_in_pos INTEGER DEFAULT 1;
+ALTER TABLE products ADD COLUMN image_url TEXT;
