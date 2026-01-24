@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    if (API_URL) {
+    if (API_URL && API_URL.startsWith('http')) {
       // Fetch settings with a short revalidation time so updates appear reasonably quickly
       const res = await fetch(`${API_URL}/settings`, { next: { revalidate: 60 } });
       if (res.ok) {
