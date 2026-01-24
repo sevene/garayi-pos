@@ -34,13 +34,15 @@ export async function POST(req: Request) {
         const { name, sku, category, price, volume, soldBy, cost, stock, showInPos, image } = body;
 
         const result = await db.prepare(`
-            INSERT INTO products (name, sku, category, price_sedan, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO products (name, sku, category, price_sedan, price_suv, price_truck, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
             name,
             sku,
             category,
-            price, // Mapping price to price_sedan as base price
+            price, // price_sedan
+            price, // price_suv (copy)
+            price, // price_truck (copy)
             volume,
             soldBy,
             cost,
