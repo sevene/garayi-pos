@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       // Fetch settings with a short revalidation time so updates appear reasonably quickly
       const res = await fetch(`${API_URL}/settings`, { next: { revalidate: 60 } });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as { name?: string };
         if (data.name) {
           storeName = data.name;
         }
