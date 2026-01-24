@@ -11,5 +11,9 @@
 			"database_name": "garayi-carwash",
 			"database_id": "807f35e3-1f47-4d8b-9ea3-c132c8826b0b"
 		}
-	]
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	}
 }
