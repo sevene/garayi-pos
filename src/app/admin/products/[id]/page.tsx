@@ -19,8 +19,8 @@ export default function EditProductPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL;
-                if (!API_URL) throw new Error("API URL not configured");
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+                // if (!API_URL) throw new Error("API URL not configured");
 
                 const id = params?.id;
                 if (!id) return;
@@ -28,13 +28,13 @@ export default function EditProductPage() {
                 // Fetch Product
                 const productRes = await fetch(`${API_URL}/products/${id}`);
                 if (!productRes.ok) throw new Error("Failed to fetch product");
-                const productData = await productRes.json();
+                const productData = await productRes.json() as Product;
                 setProduct(productData);
 
                 // Fetch Categories
                 const categoriesRes = await fetch(`${API_URL}/categories`);
                 if (categoriesRes.ok) {
-                    const categoriesData = await categoriesRes.json();
+                    const categoriesData = await categoriesRes.json() as any[];
                     setCategories(categoriesData);
                 }
 

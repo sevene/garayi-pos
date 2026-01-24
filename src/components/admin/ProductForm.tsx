@@ -112,8 +112,7 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
-            if (!API_URL) throw new Error("API URL is not configured.");
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
             const method = isEditMode ? 'PUT' : 'POST';
             const endpoint = isEditMode
@@ -139,7 +138,7 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Server error' }));
+                const errorData = await response.json().catch(() => ({ message: 'Server error' })) as { details?: string; message?: string };
                 const errorMessage = errorData.details || errorData.message || `Failed with status ${response.status}`;
                 throw new Error(errorMessage);
             }

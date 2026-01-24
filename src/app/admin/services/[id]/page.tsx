@@ -14,8 +14,8 @@ export default function EditServicePage() {
     useEffect(() => {
         const fetchService = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL;
-                if (!API_URL) throw new Error("API URL not configured");
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+                // if (!API_URL) throw new Error("API URL not configured");
 
                 const id = params?.id;
                 if (!id) return;
@@ -23,9 +23,9 @@ export default function EditServicePage() {
                 const res = await fetch(`${API_URL}/services/${id}`);
                 if (!res.ok) throw new Error("Failed to fetch service");
 
-                const data = await res.json();
+                const data = await res.json() as { service: Service } | Service;
                 // Handle response structure: { service: ..., costs: ... } or just { ... }
-                setService(data.service || data);
+                setService('service' in data ? data.service : data);
             } catch (err) {
                 console.error(err);
                 setError("Failed to load service details.");
