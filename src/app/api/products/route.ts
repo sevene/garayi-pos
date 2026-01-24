@@ -13,3 +13,50 @@ export async function GET() {
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 }
+export async function POST(req: Request) {
+    try {
+        const { env } = await getCloudflareContext({ async: true });
+        const db = env.DB;
+        const body = await req.json() as {
+            name: string;
+            sku: string;
+            category: string;
+            price: number;
+            volume: string;
+            soldBy: string;
+            cost: number;
+            stock: number;
+            showInPos: boolean;
+            image: string;
+        };
+
+        // Infer types or basic validation could go here
+        const { name, sku, category, price, volume, soldBy, cost, stock, showInPos, image } = body;
+
+        const result = await db.prepare(`
+            INSERT INTO products (name, sku, category, price_sedan, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+            name,
+            sku,
+            category,
+            price, // Mapping price to price_sedan as base price
+            volume,
+            soldBy,
+            cost,
+            stock,
+            showInPos ? 1 : 0,
+            image
+        ).run();
+
+        if (result.success) {
+            return NextResponse.json({ success: true, id: result.meta.last_row_id }, { status: 201 });
+        } else {
+            return NextResponse.json({ error: 'Failed to insert product' }, { status: 500 });
+        }
+
+    } catch (e: any) {
+        console.error("Product Creation Error", e);
+        return NextResponse.json({ error: e.message || 'Failed to create product' }, { status: 500 });
+    }
+}
