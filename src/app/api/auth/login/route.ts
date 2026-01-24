@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Use OpenNext Cloudflare Context
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
 
         // Hash the input password

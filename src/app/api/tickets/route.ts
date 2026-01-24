@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
         // 'tickets' table exists in schema.sql
         // We might need to join with ticket_items, but let's start simple
@@ -48,7 +48,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
         const body = await req.json() as any;
 

@@ -9,7 +9,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 // We can fetch data server-side here
 async function getData() {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
         const { results } = await db.prepare(`
             SELECT

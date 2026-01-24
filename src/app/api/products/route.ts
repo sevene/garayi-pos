@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
         // Assuming 'products' table holds both services and retail products
         // We might filter by category here if needed, or return all

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
         // In the carwash schema, we'll try to fetch from employees table
         // If it doesn't exist, we might return a mock or empty array until migration

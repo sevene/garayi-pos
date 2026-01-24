@@ -24,7 +24,7 @@ export default async function POSPage() {
     let employees: any[] = [];
 
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = env.DB;
 
         // 1. Fetch Categories (Static or DB?)
