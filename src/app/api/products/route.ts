@@ -8,7 +8,9 @@ export async function GET() {
         // Assuming 'products' table holds both services and retail products
         // We might filter by category here if needed, or return all
         const { results } = await db.prepare('SELECT * FROM products').all();
-        return NextResponse.json(results);
+        // Normalize IDs for legacy frontend
+        const normalizedResults = results.map((p: any) => ({ ...p, _id: String(p.id) }));
+        return NextResponse.json(normalizedResults);
     } catch (e) {
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }

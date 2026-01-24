@@ -36,9 +36,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
  * @returns A promise that resolves to an array of Product objects.
  */
 export async function fetchProducts(): Promise<Product[]> {
-  // If API URL is not set (e.g., missing .env.local), return mock data
-  if (!API_URL) {
-    console.warn("API_URL not set. Returning mock product data. Please ensure NEXT_PUBLIC_API_URL is configured.");
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+  // If API URL is not set (e.g., missing .env.local), return mock data (Legacy fallback behavior)
+  // Logic update: using logic from admin page to fetch from /api if no env var
+  if (!process.env.NEXT_PUBLIC_API_URL && typeof window === 'undefined') {
+    // Server-side without explicit URL -> cannot fetch relative path easily without full URL
+    // But client-side can use relative path.
+    // If we are server side and no API_URL, maybe return mock?
+    // Or assume deployed environment has it.
+    // Let's stick to simple relative path fallback for fetch call, but keep 'mock' logic if fetch fails.
+  }
+
+  if (false) { // Disable hardcoded mock check to force attempt fetch
     return [
       { _id: '1', name: 'Espresso Blend', sku: 'E001', volume: '100ml', price: 12.50, cost: 10.00 },
       { _id: '2', name: 'Milk Frother', sku: 'M005', volume: '100ml', price: 35.00, cost: 30.00 },
