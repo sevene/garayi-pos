@@ -14,7 +14,7 @@ interface DBProduct {
     duration_minutes: number;
 }
 
-export const runtime = 'edge';
+
 
 export default async function POSPage() {
     let services: any[] = [];

@@ -4,7 +4,7 @@ import { CartPanel } from '@/components/pos/CartPanel';
 import { CartProvider } from '@/hooks/useCart';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
+
 
 // We can fetch data server-side here
 async function getData() {
