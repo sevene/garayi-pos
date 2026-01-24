@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-key-change-in-prod');
+const secret = (typeof process !== 'undefined' && process.env && process.env.JWT_SECRET) || 'dev-secret-key-change-in-prod';
+const JWT_SECRET = new TextEncoder().encode(secret);
 
 export async function hashPassword(password: string): Promise<string> {
     const encoder = new TextEncoder();
