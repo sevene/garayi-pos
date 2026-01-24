@@ -33,12 +33,12 @@ export default function AdminProductsPage() {
     const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL is not configured.");
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+            // if (!API_URL) throw new Error("API URL is not configured.");
 
             const resProducts = await fetch(`${API_URL}/products`);
             if (resProducts.ok) {
-                const data = await resProducts.json();
+                const data = await resProducts.json() as Product[];
                 setProducts(data);
             } else {
                 console.warn(`API fetch failed (Status: ${resProducts.status}), using mock data`);
@@ -47,7 +47,7 @@ export default function AdminProductsPage() {
 
             const resCategories = await fetch(`${API_URL}/categories`);
             if (resCategories.ok) {
-                const data = await resCategories.json();
+                const data = await resCategories.json() as any[];
                 setCategories(data);
             }
         } catch (error) {
@@ -66,15 +66,15 @@ export default function AdminProductsPage() {
         if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL is not configured for delete.");
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+            // if (!API_URL) throw new Error("API URL is not configured for delete.");
 
             const response = await fetch(`${API_URL}/products/${id}`, {
                 method: 'DELETE',
             });
 
             if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ message: 'Server error during deletion' }));
+                const errorBody = await response.json().catch(() => ({ message: 'Server error during deletion' })) as { message?: string };
                 throw new Error(errorBody.message || `Deletion failed with status ${response.status}`);
             }
 
@@ -99,8 +99,8 @@ export default function AdminProductsPage() {
         ));
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL is not configured.");
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+            // if (!API_URL) throw new Error("API URL is not configured.");
 
             const response = await fetch(`${API_URL}/products/${product._id}`, {
                 method: 'PUT',
