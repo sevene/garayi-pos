@@ -26,11 +26,48 @@ if (fs.existsSync(src)) {
     // A relatively safe global replacement for "./" to "../" in string literals
     // might be risky if it matches something else, but let's try to be specific for what we see in logs.
 
+    // Rewrite imports to step up one directory
     content = content.replace(/from "\.\//g, 'from "../');
     content = content.replace(/import\("\.\//g, 'import("../');
 
+    // Wrap the worker to handle static assets via env.ASSETS
+    // 1. Rename 'export default' to a variable
+    content = content.replace('export default', 'const openNextWorker =');
+
+    // 2. Append the wrapper logic
+    content += `\n\n
+export default {
+  async fetch(request, env, ctx) {
+    // Attempt to serve static assets from Cloudflare Pages ASSETS binding
+    // only if the request is not for a specific API or dynamic route pattern that likely needs to be intercepted?
+    // Actually, checking ASSETS is usually cheap.
+    // However, we must ensure we don't accidentally intercept something that SHOULD be dynamic but happens to share a path?
+    // Next.js static assets are in _next/static, which is safe.
+    // Public files are at root.
+
+    // Simple strategy: Try ASSETS. If found (200-299), return it.
+    // If 404, delegate to OpenNext.
+
+    try {
+        const url = new URL(request.url);
+        // Optimization: bypass ASSETS fetch for API routes to save time/ops?
+        if (!url.pathname.startsWith('/api/') && env.ASSETS) {
+             const asset = await env.ASSETS.fetch(request);
+             if (asset.status >= 200 && asset.status < 400) {
+                 return asset;
+             }
+        }
+    } catch (e) {
+        console.error("Error fetching asset:", e);
+    }
+
+    // Fallback to Next.js Application
+    return openNextWorker.fetch(request, env, ctx);
+  }
+};`;
+
     fs.writeFileSync(dest, content);
-    console.log('Success: _worker.js created in assets directory with import paths adjusted.');
+    console.log('Success: _worker.js created in assets directory with import paths adjusted and asset fallback wrapper.');
 } else {
     // Check if it is maybe inside cloudflare folder?
     console.warn(`Warning: Could not find worker file at ${src}.`);
