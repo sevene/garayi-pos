@@ -14,8 +14,6 @@ interface DBProduct {
     duration_minutes: number;
 }
 
-
-
 export default async function POSPage() {
     let services: any[] = [];
     let products: any[] = [];

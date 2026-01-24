@@ -22,7 +22,7 @@ interface Expense {
 }
 
 export default function CapExPage() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
     const { formatCurrency } = useSettings();
 
     const [expenses, setExpenses] = useState<Expense[]>([]);

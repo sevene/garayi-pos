@@ -110,7 +110,7 @@ export default function AdminEmployeesPage() {
     const [employeeFormData, setEmployeeFormData] = useState<EmployeeFormData>(EMPTY_EMPLOYEE_FORM);
     const [roleFormData, setRoleFormData] = useState<RoleFormData>(EMPTY_ROLE_FORM);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     // --- Data Fetching ---
     const fetchEmployees = async () => {

@@ -60,7 +60,7 @@ export default function AdminCustomersPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<CustomerFormData>(EMPTY_CUSTOMER_FORM);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     // --- Data Fetching ---
     const fetchCustomers = async () => {

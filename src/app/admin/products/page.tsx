@@ -33,7 +33,7 @@ export default function AdminProductsPage() {
     const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL is not configured.");
 
             const resProducts = await fetch(`${API_URL}/products`);
@@ -66,7 +66,7 @@ export default function AdminProductsPage() {
         if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL is not configured for delete.");
 
             const response = await fetch(`${API_URL}/products/${id}`, {
@@ -99,7 +99,7 @@ export default function AdminProductsPage() {
         ));
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL is not configured.");
 
             const response = await fetch(`${API_URL}/products/${product._id}`, {

@@ -46,7 +46,7 @@ export default function AdminOrdersPage() {
     const { settings, formatCurrency } = useSettings();
     const taxRate = settings?.taxRate || 0;
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     const fetchTickets = async () => {
         if (!API_URL) return;

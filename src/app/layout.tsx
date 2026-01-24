@@ -1,21 +1,45 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Lato } from 'next/font/google';
+// import localFont from 'next/font/local';
 import "./globals.css";
+import { MainNav } from "../components/MainNav";
+import { Toaster } from 'sonner';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const lato = Lato({
+  subsets: ['latin'],
+  weight: ['100', '300', '400', '700', '900'],
+  variable: '--font-lato',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const cascadiaCode = localFont({
+//   src: '../public/fonts/CascadiaCode/CascadiaCode-VariableFont_wght.ttf',
+//   variable: '--font-cascadia',
+// });
 
-export const metadata: Metadata = {
-  title: "Car Wash POS",
-  description: "Car Wash POS",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let storeName = "Garayi";
+
+  try {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    if (API_URL) {
+      // Fetch settings with a short revalidation time so updates appear reasonably quickly
+      const res = await fetch(`${API_URL}/settings`, { next: { revalidate: 60 } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.name) {
+          storeName = data.name;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch store settings for metadata:", error);
+  }
+
+  return {
+    title: storeName,
+    description: "Point of Sale System",
+  };
+}
 
 export default function RootLayout({
   children,
@@ -23,11 +47,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col`}
-      >
+    <html lang="en" suppressHydrationWarning>
+      <body className={`font-sans antialiased ${lato.variable} flex flex-col h-screen overflow-hidden`}>
+        <MainNav />
+        {/* This is where the AdminLayout component is rendered when navigating to /admin
+          - The MainNav is ABOVE all children, including the AdminLayout.
+          - Ensure MainNav is styled as a BAR, not a full background.
+        */}
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

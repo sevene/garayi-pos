@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ export default function AdminServicesPage() {
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL not configured");
 
             const resServices = await fetch(`${API_URL}/services`);
@@ -50,7 +50,7 @@ export default function AdminServicesPage() {
         if (!confirm(`Delete service "${name}"?`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL not configured");
 
             const res = await fetch(`${API_URL}/services/${id}`, { method: 'DELETE' });

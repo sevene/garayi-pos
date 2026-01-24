@@ -14,7 +14,7 @@ import CustomSelect from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
 import PageHeader from '@/components/admin/PageHeader';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function AdminSettingsPage() {
     const [settings, setSettings] = useState({

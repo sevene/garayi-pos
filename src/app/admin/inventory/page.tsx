@@ -36,7 +36,7 @@ export default function InventoryPage() {
     const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL is not configured.");
 
             const res = await fetch(`${API_URL}/products`);
@@ -117,7 +117,7 @@ export default function InventoryPage() {
         setUpdatingIds(prev => new Set(prev).add(product._id));
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL is not configured.");
 
             const response = await fetch(`${API_URL}/inventories/product/${product._id}`, {

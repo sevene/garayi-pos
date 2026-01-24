@@ -35,7 +35,7 @@ export default function AdminCategoriesPage() {
     const fetchCategories = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL not configured");
 
             const res = await fetch(`${API_URL}/categories`);
@@ -83,7 +83,7 @@ export default function AdminCategoriesPage() {
         if (!confirm(`Delete category "${name}"?`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL not configured");
 
             const res = await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE' });
@@ -105,7 +105,7 @@ export default function AdminCategoriesPage() {
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             if (!API_URL) throw new Error("API URL not configured");
 
             const method = isEditing ? 'PUT' : 'POST';

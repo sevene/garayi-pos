@@ -79,7 +79,7 @@ interface Expense {
 
 export default function OverviewPage() {
     const { formatCurrency } = useSettings();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     // --- State ---
     const [tickets, setTickets] = useState<Ticket[]>([]);

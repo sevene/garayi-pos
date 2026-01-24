@@ -29,7 +29,7 @@ export default function AdminBackground() {
 
     return (
         <div
-            className="fixed inset-0 z-0 bg-gray-100 pointer-events-none select-none"
+            className="fixed inset-0 z-0 bg-gray-200/60 pointer-events-none select-none"
         // style={{
         //     backgroundImage: bgImage,
         // }}
