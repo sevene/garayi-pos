@@ -1,17 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Logs provided by OpenNext can sometimes deviate. We need to find the worker file.
-// Usually it is at .open-next/worker.js or .open-next/server-functions/default/index.js (or similar)
-// But based on the logs: "Worker saved in .open-next/worker.js"
-
-// Update: In recent versions, if might vary. Let's try to assume it's at .open-next/worker.js
-// If not found, we check if it is somewhere else?
-// Actually, earlier logs showed: "Worker saved in `.open-next/worker.js`"
-// But my local check failed. Maybe because local build was done BEFORE some changes?
-// Or maybe I am looking at the wrong directory? D:\Garayi-cloud\.open-next
-// I will assume the log from Cloudflare is correct for the Cloudflare environment.
-
 const src = path.join(process.cwd(), '.open-next', 'worker.js');
 const dest = path.join(process.cwd(), '.open-next', 'assets', '_worker.js');
 
@@ -24,17 +13,27 @@ if (fs.existsSync(src)) {
         fs.mkdirSync(assetsDir, { recursive: true });
     }
 
-    fs.copyFileSync(src, dest);
-    console.log('Success: _worker.js created in assets directory.');
+    // Read the original worker file
+    let content = fs.readFileSync(src, 'utf8');
+
+    // Rewrite imports to step up one directory because we moved the file
+    // from .open-next/worker.js to .open-next/assets/_worker.js
+    // We need to change matches like: from "./cloudflare/..." to from "../cloudflare/..."
+    // and from "./server-functions/..." to from "../server-functions/..."
+    // and from "./middleware/..." to from "../middleware/..."
+    // and from "./.build/..." to from "../.build/..."
+
+    // A relatively safe global replacement for "./" to "../" in string literals
+    // might be risky if it matches something else, but let's try to be specific for what we see in logs.
+
+    content = content.replace(/from "\.\//g, 'from "../');
+    content = content.replace(/import\("\.\//g, 'import("../');
+
+    fs.writeFileSync(dest, content);
+    console.log('Success: _worker.js created in assets directory with import paths adjusted.');
 } else {
     // Check if it is maybe inside cloudflare folder?
-    // .open-next/cloudflare/worker.js? No.
-    // Let's just warn for now, as local environment might be different from CI.
-    console.warn(`Warning: Could not find worker file at ${src}. Using a placeholder or failing?`);
-    console.warn('Listing .open-next contents:');
-    try {
-        console.log(fs.readdirSync(path.join(process.cwd(), '.open-next')));
-    } catch (e) { }
+    console.warn(`Warning: Could not find worker file at ${src}.`);
 
     // We should probably fail in CI
     if (process.env.CI) {
