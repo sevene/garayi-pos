@@ -83,8 +83,7 @@ export default async function POSPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen w-screen overflow-hidden">
-            <MainNav />
+        <div className="flex flex-col flex-1 w-full overflow-hidden">
             <POSContent
                 initialServices={services}
                 initialProducts={products}
