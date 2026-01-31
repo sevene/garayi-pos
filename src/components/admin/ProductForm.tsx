@@ -109,7 +109,7 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
                     const volumeMatch = volumeStr.match(/^(\d+(\.\d+)?)/);
                     const volume = volumeMatch ? parseFloat(volumeMatch[0]) : 0;
 
-                    console.log(`Calc Cost: Price=${price}, Vol=${volume} (from ${volumeStr})`);
+
 
                     if (!isNaN(price) && !isNaN(volume) && volume > 0) {
                         updated.cost = (price / volume).toFixed(4); // High precision for unit cost

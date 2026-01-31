@@ -14,11 +14,30 @@ interface CarTypeSelectorProps {
 export function CarTypeSelector({ service, onSelect, onClose }: CarTypeSelectorProps) {
     const { formatCurrency } = useSettings();
 
-    const types = [
-        { name: 'Sedan / Hatchback', price: service.price_sedan, icon: '🚗' },
-        { name: 'SUV / Crossover', price: service.price_suv, icon: '🚙' },
-        { name: 'Pickup / Truck', price: service.price_truck, icon: '🛻' },
-    ];
+    // Map variants to selection types
+    // We try to match icons based on name keywords, defaulting to a car
+    const types = (service.variants || []).map(variant => {
+        let icon = '🚗';
+        const lowerName = variant.name.toLowerCase();
+        if (lowerName.includes('suv') || lowerName.includes('crossover') || lowerName.includes('4x4')) icon = '🚙';
+        if (lowerName.includes('truck') || lowerName.includes('pickup') || lowerName.includes('van')) icon = '🛻';
+        if (lowerName.includes('motor') || lowerName.includes('bike')) icon = '🏍️';
+
+        return {
+            name: variant.name,
+            price: variant.price,
+            icon
+        };
+    });
+
+    // If no variants defined, maybe show base price as single option?
+    if (types.length === 0) {
+        types.push({
+            name: 'Standard',
+            price: service.servicePrice || 0,
+            icon: '🚗'
+        });
+    }
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
