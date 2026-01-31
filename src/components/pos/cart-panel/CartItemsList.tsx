@@ -22,6 +22,8 @@ const CartItemsList = () => {
                             {/* Quantity Input */}
                             <div className="flex items-center justify-center mr-3 gap-2">
                                 <input
+                                    id={`qty-${item._id}`}
+                                    name="quantity"
                                     type="number"
                                     min="1"
                                     value={item.quantity}

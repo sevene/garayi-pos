@@ -17,6 +17,8 @@ const CartHeader: React.FC<CartHeaderProps> = ({ ticketNameInput, setTicketNameI
             {/* Title & Count */}
             <div className="flex items-center justify-between gap-4">
                 <input
+                    id="ticketName"
+                    name="ticketName"
                     type="text"
                     value={ticketNameInput}
                     onChange={(e) => setTicketNameInput(e.target.value)}

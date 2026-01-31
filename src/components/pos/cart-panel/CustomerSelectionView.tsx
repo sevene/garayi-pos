@@ -51,6 +51,8 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                 <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
+                        id="customerSearch"
+                        name="customerSearch"
                         type="text"
                         placeholder="Search by name or mobile..."
                         value={searchTerm}
