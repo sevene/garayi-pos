@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS tickets;
 DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS customer_vehicles;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS expenses;
@@ -120,14 +121,42 @@ CREATE TABLE IF NOT EXISTS service_variant_ingredients (
 );
 
 -- Create Customers Table
+-- Create Customers Table
 CREATE TABLE IF NOT EXISTS customers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  email TEXT,
   phone TEXT,
-  plate_number TEXT UNIQUE,
-  vehicle_type TEXT DEFAULT 'SEDAN', -- 'SEDAN', 'SUV', 'TRUCK'
+
+  -- Address
+  address_street TEXT,
+  address_city TEXT,
+  address_zip TEXT,
+
+  -- Notes & Loyalty
+  notes TEXT,
+  loyalty_points INTEGER DEFAULT 0,
+
+  -- Legacy/Primary Vehicle Snapshot (Optional, for backward compat or quick lookup)
+  plate_number TEXT,
+  vehicle_type TEXT, -- Often mapped to makeModel in frontend or just Size
+  vehicle_size TEXT,
+  vehicle_color TEXT,
+
   visits_count INTEGER DEFAULT 0,
-  last_visit DATETIME
+  last_visit DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Customer Vehicles Table (One-to-Many)
+CREATE TABLE IF NOT EXISTS customer_vehicles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customer_id INTEGER NOT NULL,
+  plate_number TEXT,
+  vehicle_type TEXT, -- Make/Model
+  vehicle_color TEXT,
+  vehicle_size TEXT, -- 'sedan', 'suv', 'truck' etc
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 
 -- Create Tickets (Job Orders)
