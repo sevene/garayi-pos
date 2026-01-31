@@ -31,15 +31,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 color: v.vehicle_color || '',
                 size: v.vehicle_size || ''
             }));
-        } else if (result.plate_number) {
-            // Legacy Fallback
-            cars.push({
-                id: 'legacy_' + result.id,
-                plateNumber: result.plate_number,
-                makeModel: result.vehicle_type,
-                color: result.vehicle_color || '',
-                size: result.vehicle_size
-            });
         }
 
         // Map DB Record to Frontend Interface
@@ -77,11 +68,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         const { name, email, phone, address, notes, cars, loyaltyPoints } = body;
 
-        // Extract primary car info from array (since DB is flat 1:1 currently)
-        const primaryCar = cars && cars.length > 0 ? cars[0] : {};
-        const plate_number = primaryCar.plateNumber || null;
-        const vehicle_type = primaryCar.makeModel || primaryCar.size;
-
         // 1. Update Customer Record
         const result = await db.prepare(`
             UPDATE customers SET
@@ -92,10 +78,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 address_city = ?,
                 address_zip = ?,
                 notes = ?,
-                plate_number = ?,
-                vehicle_type = ?,
-                vehicle_size = ?,
-                vehicle_color = ?,
                 loyalty_points = ?,
                 last_visit = CURRENT_TIMESTAMP
             WHERE id = ?
@@ -107,10 +89,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             address?.city || '',
             address?.zip || '',
             notes || '',
-            plate_number,
-            vehicle_type,
-            primaryCar.size || null,
-            primaryCar.color || null,
             loyaltyPoints || 0,
             id
         ).run();

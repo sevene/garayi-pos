@@ -10,70 +10,56 @@ export async function GET(req: Request) {
 
         const db = await getDB();
 
-        let query = 'SELECT * FROM customers';
-        let countQuery = 'SELECT COUNT(*) as total FROM customers';
-        const params: any[] = [];
+        // Base query
+        let query = 'SELECT DISTINCT c.* FROM customers c';
+        let countQuery = 'SELECT COUNT(DISTINCT c.id) as total FROM customers c';
 
+        // Search Logic
+        const params: any[] = [];
         if (search) {
-            const searchClause = ` WHERE name LIKE ? OR phone LIKE ? OR plate_number LIKE ?`;
-            query += searchClause;
-            countQuery += searchClause;
+            // Join vehicles to search by plate
+            const joinClause = ' LEFT JOIN customer_vehicles cv ON c.id = cv.customer_id';
+            const whereClause = ` WHERE c.name LIKE ? OR c.phone LIKE ? OR cv.plate_number LIKE ?`;
+
+            query += joinClause + whereClause;
+            countQuery += joinClause + whereClause;
+
             const searchParam = `%${search}%`;
             params.push(searchParam, searchParam, searchParam);
         }
 
-        query += ` ORDER BY last_visit DESC LIMIT ${limit} OFFSET ${offset}`;
+        query += ` ORDER BY c.last_visit DESC LIMIT ${limit} OFFSET ${offset}`;
 
         // Fetch Customers
         const stmt = db.prepare(query);
         const { results: rawResults } = await (params.length ? stmt.bind(...params) : stmt).all();
 
-        // Fetch Total (for pagination)
+        // Fetch Total
         const countStmt = db.prepare(countQuery);
         const totalResult = await (params.length ? countStmt.bind(...params) : countStmt).first<{ total: number }>();
 
         // Fetch Vehicles for these customers
-        // We do this in a second query to avoid complex joins/aggregations that might be slow or complex in D1
         const customerIds = rawResults.map((c: any) => c.id);
         let allVehicles: any[] = [];
 
         if (customerIds.length > 0) {
-            try {
-                // Prepare placeholders for IN clause
-                const placeholders = customerIds.map(() => '?').join(',');
-                const vehiclesRes = await db.prepare(`SELECT * FROM customer_vehicles WHERE customer_id IN (${placeholders})`)
-                    .bind(...customerIds)
-                    .all();
-                allVehicles = vehiclesRes.results;
-            } catch (err) {
-                console.warn("Failed to fetch customer_vehicles (table might not exist yet?)", err);
-            }
+            const placeholders = customerIds.map(() => '?').join(',');
+            const vehiclesRes = await db.prepare(`SELECT * FROM customer_vehicles WHERE customer_id IN (${placeholders})`)
+                .bind(...customerIds)
+                .all();
+            allVehicles = vehiclesRes.results;
         }
 
-        // Map DB columns to Frontend Interface
+        // Map Results
         const mappedResults = rawResults.map((row: any) => {
-            // Get vehicles from new table
             const directVehicles = allVehicles.filter((v: any) => v.customer_id === row.id);
-
-            // Map to frontend interface
-            let cars = directVehicles.map((v: any) => ({
+            const cars = directVehicles.map((v: any) => ({
                 id: v.id,
                 plateNumber: v.plate_number,
                 makeModel: v.vehicle_type,
                 color: v.vehicle_color || '',
                 size: v.vehicle_size || ''
             }));
-
-            // Fallback for legacy data if no vehicles in new table but legacy columns exist
-            if (cars.length === 0 && row.plate_number) {
-                cars.push({
-                    id: 'legacy_' + row.id,
-                    plateNumber: row.plate_number,
-                    makeModel: row.vehicle_type,
-                    color: row.vehicle_color || '',
-                    size: row.vehicle_size
-                });
-            }
 
             return {
                 _id: row.id.toString(),
@@ -88,7 +74,7 @@ export async function GET(req: Request) {
                 notes: row.notes || '',
                 cars,
                 loyaltyPoints: row.loyalty_points || 0,
-                createdAt: row.last_visit // approximate for now
+                createdAt: row.last_visit
             };
         });
 
@@ -110,23 +96,17 @@ export async function POST(req: Request) {
         const body = await req.json() as any;
         const db = await getDB();
 
-        // Destructure nested frontend fields to flat DB columns
         const { name, email, phone, address, notes, cars, loyaltyPoints } = body;
 
-        // Keep legacy flat columns populated with the FIRST car for backward compatibility
-        const primaryCar = cars && cars.length > 0 ? cars[0] : {};
-        const plate_number = primaryCar.plateNumber || null;
-        const vehicle_type = primaryCar.makeModel || primaryCar.size; // fallback logic same as before?
-
-        // 1. Insert Customer
+        // 1. Insert Customer (No legacy vehicle cols)
         const result = await db.prepare(`
             INSERT INTO customers (
                 name, email, phone,
                 address_street, address_city, address_zip,
-                notes, plate_number, vehicle_type,
-                loyalty_points, visits_count, last_visit, vehicle_size, vehicle_color
+                notes,
+                loyalty_points, visits_count, last_visit
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
         `).bind(
             name,
             email || '',
@@ -135,11 +115,7 @@ export async function POST(req: Request) {
             address?.city || '',
             address?.zip || '',
             notes || '',
-            plate_number,
-            vehicle_type,
-            loyaltyPoints || 0,
-            primaryCar.size || null,
-            primaryCar.color || null
+            loyaltyPoints || 0
         ).run();
 
         if (!result.success) {

@@ -137,12 +137,6 @@ CREATE TABLE IF NOT EXISTS customers (
   notes TEXT,
   loyalty_points INTEGER DEFAULT 0,
 
-  -- Legacy/Primary Vehicle Snapshot (Optional, for backward compat or quick lookup)
-  plate_number TEXT,
-  vehicle_type TEXT, -- Often mapped to makeModel in frontend or just Size
-  vehicle_size TEXT,
-  vehicle_color TEXT,
-
   visits_count INTEGER DEFAULT 0,
   last_visit DATETIME DEFAULT CURRENT_TIMESTAMP
 );
