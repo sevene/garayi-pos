@@ -28,7 +28,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.15.1",
+    "@opennextjs/cloudflare": "^1.16.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
