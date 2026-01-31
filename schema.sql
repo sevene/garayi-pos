@@ -26,7 +26,21 @@ CREATE TABLE IF NOT EXISTS settings (
   printer_name TEXT,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-DROP TABLE IF EXISTS users;
+
+-- Create Employees Table (for authentication and staff management)
+CREATE TABLE IF NOT EXISTS employees (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  name TEXT,
+  password_hash TEXT,
+  role TEXT DEFAULT 'staff',
+  pin TEXT,
+  contactInfo TEXT DEFAULT '{}',
+  address TEXT,
+  status TEXT DEFAULT 'active',
+  compensation TEXT DEFAULT '{}',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create Categories Table
 CREATE TABLE IF NOT EXISTS categories (
@@ -146,20 +160,9 @@ CREATE TABLE IF NOT EXISTS ticket_items (
   FOREIGN KEY (ticket_id) REFERENCES tickets(id)
 );
 
--- Create Users Table
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'admin',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-
--- Seed Admin User
-INSERT INTO users (username, password_hash, role) VALUES
-('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');
+-- Seed Admin User (into employees table)
+INSERT INTO employees (username, name, password_hash, role) VALUES
+('admin', 'Administrator', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');
 
 -- Seed Initial Settings
 INSERT OR IGNORE INTO settings (id, name, currency) VALUES (1, 'Garayi Carwash', 'PHP');
-
