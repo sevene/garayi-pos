@@ -21,6 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
   let storeName = "Garayi";
 
   try {
+    // For server-side metadata generation, we need a full URL
+    // Use NEXT_PUBLIC_API_URL if available, otherwise skip fetching
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     if (API_URL && API_URL.startsWith('http')) {
       // Fetch settings with a short revalidation time so updates appear reasonably quickly
@@ -32,6 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
         }
       }
     }
+    // Note: If API_URL is not set, we simply use the default "Garayi" store name
   } catch (error) {
     console.error("Failed to fetch store settings for metadata:", error);
   }

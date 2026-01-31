@@ -33,10 +33,8 @@ export default function AdminProductsPage() {
     const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-            // if (!API_URL) throw new Error("API URL is not configured.");
 
-            const resProducts = await fetch(`${API_URL}/products`);
+            const resProducts = await fetch('/api/products');
             if (resProducts.ok) {
                 const data = await resProducts.json() as Product[];
                 setProducts(data);
@@ -45,7 +43,7 @@ export default function AdminProductsPage() {
                 setProducts(MOCK_PRODUCTS);
             }
 
-            const resCategories = await fetch(`${API_URL}/categories`);
+            const resCategories = await fetch('/api/categories');
             if (resCategories.ok) {
                 const data = await resCategories.json() as any[];
                 setCategories(data);
@@ -66,10 +64,7 @@ export default function AdminProductsPage() {
         if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-            // if (!API_URL) throw new Error("API URL is not configured for delete.");
-
-            const response = await fetch(`${API_URL}/products/${id}`, {
+            const response = await fetch(`/api/products/${id}`, {
                 method: 'DELETE',
             });
 
@@ -99,10 +94,7 @@ export default function AdminProductsPage() {
         ));
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-            // if (!API_URL) throw new Error("API URL is not configured.");
-
-            const response = await fetch(`${API_URL}/products/${product._id}`, {
+            const response = await fetch(`/api/products/${product._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ showInPOS: newStatus }),

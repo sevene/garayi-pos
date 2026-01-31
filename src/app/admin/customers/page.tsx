@@ -60,14 +60,11 @@ export default function AdminCustomersPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<CustomerFormData>(EMPTY_CUSTOMER_FORM);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
     // --- Data Fetching ---
     const fetchCustomers = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/customers`);
+            const res = await fetch('/api/customers');
             if (!res.ok) throw new Error('Failed to fetch customers');
             const responseData = await res.json() as any;
             // Handle both array and paginated object responses
@@ -125,7 +122,7 @@ export default function AdminCustomersPage() {
     const handleDeleteClick = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete customer "${name}"?`)) return;
         try {
-            const res = await fetch(`${API_URL}/customers/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete');
             setCustomers(prev => prev.filter(c => c._id !== id));
             toast.success('Customer deleted');
@@ -140,7 +137,7 @@ export default function AdminCustomersPage() {
         setIsSaving(true);
         try {
             const method = editingId ? 'PUT' : 'POST';
-            const url = editingId ? `${API_URL}/customers/${editingId}` : `${API_URL}/customers`;
+            const url = editingId ? `/api/customers/${editingId}` : '/api/customers';
 
             // Prepare payload (remove _id if present in formData)
             const { _id, ...payload } = formData;

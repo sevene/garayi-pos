@@ -63,7 +63,6 @@ interface Product {
 
 export default function ReportsPage() {
     const { formatCurrency } = useSettings();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     // --- State ---
     const [activeTab, setActiveTab] = useState<'SALES' | 'CREW' | 'ITEMS'>('SALES');
@@ -82,15 +81,14 @@ export default function ReportsPage() {
     // --- Fetch Data ---
     useEffect(() => {
         const fetchData = async () => {
-            if (!API_URL) return;
             setIsLoading(true);
             try {
                 // Fetching ALL data for client-side filtering (similar to OverviewPage pattern)
                 const [ticketsRes, employeesRes, servicesRes, productsRes] = await Promise.all([
-                    fetch(`${API_URL}/tickets?all=true`),
-                    fetch(`${API_URL}/employees`),
-                    fetch(`${API_URL}/services`),
-                    fetch(`${API_URL}/products?all=true`)
+                    fetch('/api/tickets?all=true'),
+                    fetch('/api/employees'),
+                    fetch('/api/services'),
+                    fetch('/api/products?all=true')
                 ]);
 
                 if (ticketsRes.ok) setTickets(await ticketsRes.json());
@@ -106,7 +104,7 @@ export default function ReportsPage() {
         };
 
         fetchData();
-    }, [API_URL]);
+    }, []);
 
     // --- Process Data ---
     const reportData = useMemo(() => {

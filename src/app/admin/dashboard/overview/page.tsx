@@ -82,7 +82,6 @@ interface Expense {
 
 export default function OverviewPage() {
     const { formatCurrency } = useSettings();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     // --- State ---
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -98,15 +97,14 @@ export default function OverviewPage() {
     // --- Fetch Data ---
     useEffect(() => {
         const fetchData = async () => {
-            if (!API_URL) return;
             setIsLoading(true);
             try {
                 const [ticketsRes, employeesRes, servicesRes, productsRes, expensesRes] = await Promise.all([
-                    fetch(`${API_URL}/tickets?all=true`),
-                    fetch(`${API_URL}/employees`),
-                    fetch(`${API_URL}/services`),
-                    fetch(`${API_URL}/products?all=true`),
-                    fetch(`${API_URL}/expenses`)
+                    fetch('/api/tickets?all=true'),
+                    fetch('/api/employees'),
+                    fetch('/api/services'),
+                    fetch('/api/products?all=true'),
+                    fetch('/api/expenses')
                 ]);
 
                 const ticketsData = ticketsRes.ok ? await ticketsRes.json() : [];
@@ -129,7 +127,7 @@ export default function OverviewPage() {
         };
 
         fetchData();
-    }, [API_URL]);
+    }, []);
 
     useEffect(() => {
         setIsMounted(true);

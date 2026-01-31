@@ -32,7 +32,6 @@ interface SalesData {
 }
 
 export default function SalesPage() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
     const { formatCurrency } = useSettings();
 
     /* -------------------------------------------------------------------------
@@ -60,7 +59,6 @@ export default function SalesPage() {
        Actions
        ------------------------------------------------------------------------- */
     const fetchSalesData = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
 
         try {
@@ -76,7 +74,7 @@ export default function SalesPage() {
             // For now, let's assume we fetch all and filter client side if backend doesn't support range
             // OR ideally, we implement a specific sales endpoint.
             // Let's use the existing tickets endpoint and process it for now.
-            const res = await fetch(`${API_URL}/tickets?all=true`); // Fetching all effectively for now, would optimize later
+            const res = await fetch('/api/tickets?all=true'); // Fetching all effectively for now, would optimize later
             if (res.ok) {
                 let tickets: any[] = await res.json();
 

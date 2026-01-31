@@ -48,14 +48,11 @@ export default function AdminOrdersPage() {
 
     const { formatCurrency } = useSettings();
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
     const fetchTickets = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_URL}/tickets?all=true`);
+            const res = await fetch('/api/tickets?all=true');
             if (!res.ok) throw new Error('Failed to fetch orders');
             const data = await res.json() as Ticket[];
             setTickets(data);
@@ -76,7 +73,7 @@ export default function AdminOrdersPage() {
         if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
 
         try {
-            const res = await fetch(`${API_URL}/tickets/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete order');
 
             // Remove from local state

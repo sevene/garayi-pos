@@ -14,13 +14,10 @@ export default function EditServicePage() {
     useEffect(() => {
         const fetchService = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-                // if (!API_URL) throw new Error("API URL not configured");
-
                 const id = params?.id;
                 if (!id) return;
 
-                const res = await fetch(`${API_URL}/services/${id}`);
+                const res = await fetch(`/api/services/${id}`);
                 if (!res.ok) throw new Error("Failed to fetch service");
 
                 const data = await res.json() as { service: Service } | Service;

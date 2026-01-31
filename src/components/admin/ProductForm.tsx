@@ -129,12 +129,10 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-
             const method = isEditMode ? 'PUT' : 'POST';
             const endpoint = isEditMode
-                ? `${API_URL}/products/${formData._id}`
-                : `${API_URL}/products`;
+                ? `/api/products/${formData._id}`
+                : '/api/products';
 
             const { _id, ...rest } = formData;
 

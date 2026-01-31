@@ -113,14 +113,11 @@ export default function AdminEmployeesPage() {
     const [employeeFormData, setEmployeeFormData] = useState<EmployeeFormData>(EMPTY_EMPLOYEE_FORM);
     const [roleFormData, setRoleFormData] = useState<RoleFormData>(EMPTY_ROLE_FORM);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
-
     // --- Data Fetching ---
     const fetchEmployees = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/employees`);
+            const res = await fetch('/api/employees');
             if (!res.ok) throw new Error('Failed to fetch employees');
             const data = await res.json() as Employee[];
             setEmployees(data);
@@ -133,10 +130,9 @@ export default function AdminEmployeesPage() {
     };
 
     const fetchRoles = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/roles`);
+            const res = await fetch('/api/roles');
             if (!res.ok) throw new Error('Failed to fetch roles');
             const data = await res.json() as Role[];
             setRoles(data);
@@ -223,7 +219,7 @@ export default function AdminEmployeesPage() {
     const handleDeleteEmployeeClick = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete employee "${name}"?`)) return;
         try {
-            const res = await fetch(`${API_URL}/employees/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete');
             setEmployees(prev => prev.filter(e => e._id !== id));
             toast.success('Employee deleted');
@@ -238,7 +234,7 @@ export default function AdminEmployeesPage() {
         setIsSaving(true);
         try {
             const method = editingId ? 'PUT' : 'POST';
-            const url = editingId ? `${API_URL}/employees/${editingId}` : `${API_URL}/employees`;
+            const url = editingId ? `/api/employees/${editingId}` : '/api/employees';
 
             // Prepare payload (remove _id if present in formData)
             const { _id, ...formDataNoId } = employeeFormData;
@@ -301,7 +297,7 @@ export default function AdminEmployeesPage() {
     const handleDeleteRoleClick = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete role "${name}"?`)) return;
         try {
-            const res = await fetch(`${API_URL}/roles/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/roles/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Failed to delete');
             setRoles(prev => prev.filter(r => r._id !== id));
             toast.success('Role deleted');
@@ -316,7 +312,7 @@ export default function AdminEmployeesPage() {
         setIsSaving(true);
         try {
             const method = editingId ? 'PUT' : 'POST';
-            const url = editingId ? `${API_URL}/roles/${editingId}` : `${API_URL}/roles`;
+            const url = editingId ? `/api/roles/${editingId}` : '/api/roles';
 
             const { _id, ...payload } = roleFormData;
 

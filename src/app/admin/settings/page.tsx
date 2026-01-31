@@ -14,8 +14,6 @@ import CustomSelect from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
 import PageHeader from '@/components/admin/PageHeader';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 interface SettingsResponse {
     name?: string;
     address?: { street?: string };
@@ -50,9 +48,8 @@ export default function AdminSettingsPage() {
 
     useEffect(() => {
         const fetchSettings = async () => {
-            if (!API_URL) return;
             try {
-                const res = await fetch(`${API_URL}/settings`);
+                const res = await fetch('/api/settings');
                 if (res.ok) {
                     const data = await res.json() as SettingsResponse;
                     setSettings({
@@ -88,11 +85,7 @@ export default function AdminSettingsPage() {
                 taxRate: (Number(settings.taxRate) || 0) / 100
             };
 
-            // If API_URL is strictly defined in env, use it. Otherwise, assume relative path for consistency in some setups.
-            // Often problems arise if API_URL is empty or misconfigured.
-            const url = API_URL ? `${API_URL}/settings` : '/api/settings';
-
-            const res = await fetch(url, {
+            const res = await fetch('/api/settings', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

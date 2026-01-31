@@ -22,7 +22,6 @@ interface Expense {
 }
 
 export default function OpExPage() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
     const { formatCurrency } = useSettings();
 
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -42,10 +41,9 @@ export default function OpExPage() {
 
     // Fetch Expenses
     const fetchExpenses = async () => {
-        if (!API_URL) return;
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/expenses?type=opex`);
+            const res = await fetch('/api/expenses?type=opex');
             if (res.ok) {
                 const data = await res.json();
                 setExpenses(data);
@@ -59,13 +57,13 @@ export default function OpExPage() {
 
     useEffect(() => {
         fetchExpenses();
-    }, [API_URL]);
+    }, []);
 
     // Handle Delete
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this expense?')) return;
         try {
-            const res = await fetch(`${API_URL}/expenses/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 fetchExpenses();
             }
@@ -84,7 +82,7 @@ export default function OpExPage() {
                 type: 'opex'
             };
 
-            const res = await fetch(`${API_URL}/expenses`, {
+            const res = await fetch('/api/expenses', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
