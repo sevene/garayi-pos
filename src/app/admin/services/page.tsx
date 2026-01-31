@@ -27,10 +27,7 @@ export default function AdminServicesPage() {
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
-            if (!API_URL) throw new Error("API URL not configured");
-
-            const resServices = await fetch(`${API_URL}/services`);
+            const resServices = await fetch('/api/services');
             if (resServices.ok) {
                 const data = await resServices.json() as Service[];
                 setServices(data);
@@ -50,10 +47,7 @@ export default function AdminServicesPage() {
         if (!confirm(`Delete service "${name}"?`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
-            if (!API_URL) throw new Error("API URL not configured");
-
-            const res = await fetch(`${API_URL}/services/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error("Failed to delete");
 
             setServices(prev => prev.filter(s => s._id !== id));

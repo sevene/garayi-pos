@@ -98,18 +98,15 @@ export default function ServiceForm({ initialData, isEditing = false }: ServiceF
     useEffect(() => {
         const fetchDependencies = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL;
-                if (!API_URL) return;
-
                 // Fetch products
-                const resProducts = await fetch(`${API_URL}/products`);
+                const resProducts = await fetch('/api/products');
                 if (resProducts.ok) {
                     const data = await resProducts.json() as Product[];
                     setProducts(data);
                 }
 
                 // Fetch categories
-                const resCategories = await fetch(`${API_URL}/categories`);
+                const resCategories = await fetch('/api/categories');
                 if (resCategories.ok) {
                     const data = await resCategories.json() as Category[];
                     setCategories(data);
@@ -330,13 +327,10 @@ export default function ServiceForm({ initialData, isEditing = false }: ServiceF
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
-            if (!API_URL) throw new Error("API URL not configured");
-
             const method = isEditing ? 'PUT' : 'POST';
             const endpoint = isEditing
-                ? `${API_URL}/services/${formData._id}`
-                : `${API_URL}/services`;
+                ? `/api/services/${formData._id}`
+                : '/api/services';
 
             const { _id, createdAt, updatedAt, ...rest } = formData as any;
 

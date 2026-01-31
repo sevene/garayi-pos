@@ -19,16 +19,10 @@ export const useSettings = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
     useEffect(() => {
         const fetchSettings = async () => {
-            if (!API_URL) {
-                setLoading(false);
-                return;
-            }
             try {
-                const res = await fetch(`${API_URL}/settings`);
+                const res = await fetch('/api/settings');
                 if (res.ok) {
                     const data = await res.json();
                     setSettings({
@@ -54,7 +48,7 @@ export const useSettings = () => {
         };
 
         fetchSettings();
-    }, [API_URL]);
+    }, []);
 
     const formatCurrency = (amount: number) => {
         const symbol = settings?.currency === 'USD' ? '$' : settings?.currency === 'EUR' ? '€' : '₱';

@@ -35,10 +35,7 @@ export default function AdminCategoriesPage() {
     const fetchCategories = useCallback(async () => {
         try {
             setIsLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL not configured");
-
-            const res = await fetch(`${API_URL}/categories`);
+            const res = await fetch('/api/categories');
             if (res.ok) {
                 const data = await res.json();
                 setCategories(data);
@@ -83,10 +80,7 @@ export default function AdminCategoriesPage() {
         if (!confirm(`Delete category "${name}"?`)) return;
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL not configured");
-
-            const res = await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE' });
+            const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error("Failed to delete");
 
             setCategories(prev => prev.filter(c => c._id !== id));
@@ -105,13 +99,10 @@ export default function AdminCategoriesPage() {
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-            if (!API_URL) throw new Error("API URL not configured");
-
             const method = isEditing ? 'PUT' : 'POST';
             const endpoint = isEditing
-                ? `${API_URL}/categories/${formData._id}`
-                : `${API_URL}/categories`;
+                ? `/api/categories/${formData._id}`
+                : '/api/categories';
 
             const { _id, ...payload } = formData;
             const res = await fetch(endpoint, {

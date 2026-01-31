@@ -95,7 +95,6 @@ interface CartContextType {
 // =========================================================================
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const safeFloat = (val: string | number | undefined | null): number => {
     const num = parseFloat(String(val));
@@ -134,9 +133,8 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     // --- Fetch Settings (Tax Rate) ---
     useEffect(() => {
         const fetchSettings = async () => {
-            if (!API_URL) return;
             try {
-                const res = await fetch(`${API_URL}/settings`);
+                const res = await fetch('/api/settings');
                 if (res.ok) {
                     const data = await res.json() as { tax_rate?: number; currency?: string };
                     if (data.tax_rate !== undefined) {
@@ -243,10 +241,9 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     // --- API Helpers ---
 
     const fetchOpenTickets = useCallback(async () => {
-        if (!API_URL) return;
         setIsTicketsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/tickets`, { cache: 'no-store' });
+            const res = await fetch('/api/tickets', { cache: 'no-store' });
             if (!res.ok) throw new Error("Failed to fetch tickets");
             const data = await res.json() as OpenTicket[];
             setOpenTickets(data);
@@ -339,7 +336,6 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
 
     const saveTicket = useCallback(async (nameToSave: string) => {
         if (cartItems.length === 0 || isProcessing) return;
-        if (!API_URL) return setCheckoutError("API Not Configured");
 
         setIsProcessing(true);
         setCheckoutError(null);
@@ -347,7 +343,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         try {
             const isNew = !currentTicketId;
             const method = isNew ? 'POST' : 'PUT';
-            const url = isNew ? (`${API_URL}/tickets`) : (`${API_URL}/tickets/${currentTicketId}`);
+            const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
 
             const res = await fetch(url, {
                 method,
@@ -379,10 +375,9 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     }, [cartItems.length, isProcessing, currentTicketId, buildPayload, fetchOpenTickets, switchToTicketsView, clearCart]);
 
     const deleteTicket = useCallback(async (ticketId: string) => {
-        if (!API_URL) return;
         setIsProcessing(true);
         try {
-            const res = await fetch(`${API_URL}/tickets/${ticketId}`, { method: 'DELETE' });
+            const res = await fetch(`/api/tickets/${ticketId}`, { method: 'DELETE' });
             if (!res.ok) throw new Error("Failed to delete ticket");
 
             // If we deleted the currently open ticket, clear the cart
@@ -398,11 +393,10 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         } finally {
             setIsProcessing(false);
         }
-    }, [API_URL, currentTicketId, clearCart, fetchOpenTickets]);
+    }, [currentTicketId, clearCart, fetchOpenTickets]);
 
     const checkout = useCallback(async (paymentMethod: string) => {
         if (cartItems.length === 0 || isProcessing) return;
-        if (!API_URL) return setCheckoutError("API Not Configured");
 
         setIsProcessing(true);
         setCheckoutError(null);
@@ -410,7 +404,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         try {
             const isNew = !currentTicketId;
             const method = isNew ? 'POST' : 'PUT';
-            const url = isNew ? (`${API_URL}/tickets`) : (`${API_URL}/tickets/${currentTicketId}`);
+            const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
 
             const res = await fetch(url, {
                 method,
