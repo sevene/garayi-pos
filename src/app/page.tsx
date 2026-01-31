@@ -4,13 +4,15 @@ import { CartPanel } from '@/components/pos/CartPanel';
 import { CartProvider } from '@/hooks/useCart';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
+export const dynamic = 'force-dynamic';
+
 
 
 // We can fetch data server-side here
 async function getData() {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
         const { results } = await db.prepare(`
             SELECT
                 id as _id,

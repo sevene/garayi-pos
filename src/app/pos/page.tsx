@@ -1,6 +1,8 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { POSContent } from '@/components/pos/POSContent';
 
+export const dynamic = 'force-dynamic';
+
 export default async function POSPage() {
     let services: any[] = [];
     let products: any[] = [];
@@ -10,7 +12,7 @@ export default async function POSPage() {
 
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
 
         // 1. Fetch Categories
         const categoriesRes = await db.prepare('SELECT * FROM categories').all();
