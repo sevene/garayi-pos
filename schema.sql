@@ -185,6 +185,17 @@ CREATE TABLE IF NOT EXISTS ticket_items (
   FOREIGN KEY (ticket_id) REFERENCES tickets(id)
 );
 
+-- Create Ticket Assignments (Crew/Staff linking)
+CREATE TABLE IF NOT EXISTS ticket_assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL,
+  employee_id INTEGER NOT NULL,
+  role TEXT DEFAULT 'crew', -- 'crew', 'cashier', etc.
+  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+  FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
 -- Seed Admin User (into employees table)
 INSERT INTO employees (username, name, password_hash, role) VALUES
 ('admin', 'Administrator', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');

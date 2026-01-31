@@ -43,7 +43,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                 >
                     <ChevronLeftIcon className="w-6 h-6" />
                 </button>
-                <h2 className="text-lg font-bold text-gray-800">Assign Customer</h2>
+                <h2 className="text-lg font-bold text-gray-800">Sort Ticket Details</h2>
             </div>
 
             {/* Search Bar */}
@@ -126,8 +126,8 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                                                     setCurrentTicketName(newTicketName);
                                                 }}
                                                 className={`w-full flex items-center justify-between p-2 rounded-lg border text-sm transition-all ${isSelected
-                                                        ? 'bg-lime-50 border-lime-500 text-lime-900'
-                                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                                    ? 'bg-lime-50 border-lime-500 text-lime-900'
+                                                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                 )}
 
                 {/* Crew Selection Section */}
-                {/* <div className="p-4 border-b border-gray-100">
+                <div className="p-4 border-b border-gray-100">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Service Crew</h3>
 
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -169,7 +169,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                             );
                         })}
                     </div>
-                </div> */}
+                </div>
 
                 {/* Customer List */}
                 <div className="p-2">
@@ -222,7 +222,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                     onClick={onBack}
                     className="w-full py-4 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 transition-all active:scale-[0.98]"
                 >
-                    Assign Customer
+                    Confirm Details
                 </button>
             </div>
         </div>

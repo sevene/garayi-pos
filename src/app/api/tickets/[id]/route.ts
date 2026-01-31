@@ -5,7 +5,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
         const { id } = await params;
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
         const body = await req.json() as any;
 
         // Parse plate if needed
@@ -86,6 +86,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         }
 
+        // Update Crew (Full Sync)
+        if (body.crew !== undefined) { // Check undefined to allow partial updates if we wanted, but here we assume full payload
+            await db.prepare('DELETE FROM ticket_assignments WHERE ticket_id = ?').bind(id).run();
+
+            const crew = body.crew;
+            if (crew && Array.isArray(crew) && crew.length > 0) {
+                const crewStmt = db.prepare('INSERT INTO ticket_assignments (ticket_id, employee_id) VALUES (?, ?)');
+                const crewBatch = crew.map((empId: string | number) => crewStmt.bind(id, empId));
+                for (const b of crewBatch) {
+                    await b.run();
+                }
+            }
+        }
+
         return NextResponse.json({ success: true, _id: id, name: body.name });
     } catch (e) {
         console.error("Ticket PUT Error:", e);
@@ -97,7 +111,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     try {
         const { id } = await params;
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
 
         // Delete Items
         await db.prepare('DELETE FROM ticket_items WHERE ticket_id = ?').bind(id).run();

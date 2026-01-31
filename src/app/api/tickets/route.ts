@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET() {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
         // 'tickets' table exists in schema.sql
         // We might need to join with ticket_items, but let's start simple
         const { results } = await db.prepare('SELECT * FROM tickets WHERE status != ?').bind('PAID').all();
@@ -81,9 +81,16 @@ export async function GET() {
             ticket.taxRate = ticket.tax_rate ?? 0;
             ticket.taxAmount = ticket.tax_amount ?? 0;
 
-            // Ensure name is set (fallback if null for old tickets)
             if (!ticket.name) {
                 ticket.name = `Order #${ticket.id}`;
+            }
+
+            // Populate Crew
+            try {
+                const crewRes = await db.prepare('SELECT employee_id FROM ticket_assignments WHERE ticket_id = ?').bind(ticket.id).all();
+                ticket.crew = crewRes.results.map((c: any) => String(c.employee_id));
+            } catch (e) {
+                ticket.crew = [];
             }
         }
 
@@ -97,7 +104,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = (env as any).DB as D1Database;
         const body = await req.json() as any;
 
         console.log("Creating Ticket. Body:", JSON.stringify(body)); // Debug log
@@ -171,6 +178,17 @@ export async function POST(req: NextRequest) {
 
             // Loop for batch insertion
             for (const b of batch) {
+                await b.run();
+            }
+        }
+
+        // Insert Crew Assignments
+        const crew = body.crew;
+        if (crew && Array.isArray(crew) && crew.length > 0) {
+            const crewStmt = db.prepare('INSERT INTO ticket_assignments (ticket_id, employee_id) VALUES (?, ?)');
+            const crewBatch = crew.map((empId: string | number) => crewStmt.bind(ticketId, empId));
+            // Execute sequentially or batch if D1 supports it (it does)
+            for (const b of crewBatch) {
                 await b.run();
             }
         }
