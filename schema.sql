@@ -160,10 +160,11 @@ CREATE TABLE IF NOT EXISTS customer_vehicles (
 );
 
 -- Create Tickets (Job Orders)
+-- Create Tickets (Job Orders)
 CREATE TABLE IF NOT EXISTS tickets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  finished_at DATETIME,
+  completed_at DATETIME, -- Renamed from finished_at to match API
   subtotal REAL DEFAULT 0, -- Sum of item prices before tax
   tax_rate REAL DEFAULT 0, -- Tax rate at time of order (e.g., 0.12 for 12%)
   tax_amount REAL DEFAULT 0, -- Calculated tax amount
@@ -172,6 +173,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   payment_method TEXT,
   customer_id INTEGER,
   plate_number TEXT,
+  name TEXT, -- Added to track order name/identifier
   FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 

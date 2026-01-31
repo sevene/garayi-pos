@@ -356,7 +356,7 @@ export default function ServiceForm({ initialData, isEditing = false }: ServiceF
 
             if ('__v' in payload) delete payload.__v;
 
-            console.log("Submitting Service Payload:", payload);
+
 
             const res = await fetch(endpoint, {
                 method,
