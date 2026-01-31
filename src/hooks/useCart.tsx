@@ -138,7 +138,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
             try {
                 const res = await fetch(`${API_URL}/settings`);
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = await res.json() as { tax_rate?: number; currency?: string };
                     if (data.tax_rate !== undefined) {
                         setTaxRate(data.tax_rate);
                     }
@@ -248,7 +248,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         try {
             const res = await fetch(`${API_URL}/tickets`, { cache: 'no-store' });
             if (!res.ok) throw new Error("Failed to fetch tickets");
-            const data = await res.json();
+            const data = await res.json() as OpenTicket[];
             setOpenTickets(data);
         } catch (err) {
             console.error(err);
@@ -273,7 +273,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
                     price: item.unitPrice,
                     cost: 0,
                     volume: 0,
-                    showInPos: true
+                    showInPOS: true
                 },
                 quantity: item.quantity,
                 price: item.unitPrice,
@@ -327,6 +327,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         })),
         subtotal,
         tax,
+        taxRate, // Include tax rate for historical accuracy
         total,
         cashierId: 'POS-T1',
         paymentMethod: paymentMethod || 'Cash',
@@ -334,7 +335,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         name: nameOverride || currentTicketName,
         customer: currentCustomer?._id,
         crew: selectedCrew
-    }), [cartItems, subtotal, tax, total, currentTicketName, currentCustomer, selectedCrew]);
+    }), [cartItems, subtotal, tax, taxRate, total, currentTicketName, currentCustomer, selectedCrew]);
 
     const saveTicket = useCallback(async (nameToSave: string) => {
         if (cartItems.length === 0 || isProcessing) return;
@@ -356,7 +357,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
 
             if (!res.ok) throw new Error("Save failed");
 
-            const data = await res.json();
+            const data = await res.json() as { _id: string; name: string };
 
             setCurrentTicketId(data._id);
             setCurrentTicketName(data.name);

@@ -1,11 +1,10 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = params;
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const { id } = await params;
+        const db = await getDB();
 
         const product = await db.prepare('SELECT * FROM products WHERE id = ?').bind(id).first();
 
@@ -13,73 +12,89 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
-        // Normalize ID to string for legacy frontend compatibility
-        const normalizedProduct = { ...product, _id: String(product.id) };
+        // Normalize ID and map fields for frontend compatibility
+        const normalizedProduct = {
+            ...product,
+            _id: String(product.id),
+            price: product.price, // Map price
+            soldBy: product.unit_type,  // Map unit_type to soldBy
+            showInPOS: Boolean(product.show_in_pos), // Map integer to boolean
+            image: product.image_url // Map snake_case to camelCase
+        };
 
         return NextResponse.json(normalizedProduct);
-    } catch (e) {
-        return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
+    } catch (e: any) {
+        console.error("Product Fetch Error:", e);
+        return NextResponse.json({ message: e.message || 'Failed to fetch product' }, { status: 500 });
     }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = params;
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const { id } = await params;
+        const db = await getDB();
         const body = await req.json() as any;
 
-        const { name, sku, category, price, volume, soldBy, cost, stock, showInPos, image } = body;
+        console.log("Updating Product - Body:", JSON.stringify(body, null, 2));
 
-        // Note: D1 doesn't support easy dynamic updates without building the query manually
-        // For simplicity, we update all fields, assuming full object availability or handling undefined
-        // A better approach is dynamic query building.
+        // Check if we are doing a partial update (e.g. toggle POS) or full update
+        // If 'name' is missing, it's likely a partial update.
+        // However, a robust way involves checking keys.
 
-        await db.prepare(`
-            UPDATE products SET
-                name = ?,
-                sku = ?,
-                category = ?,
-                price_sedan = ?,
-                price_suv = ?,
-                price_truck = ?,
-                volume = ?,
-                unit_type = ?,
-                cost = ?,
-                stock_quantity = ?,
-                show_in_pos = ?,
-                image_url = ?
-            WHERE id = ?
-        `).bind(
-            name,
-            sku,
-            category,
-            price, price, price, // basic implementation updates all prices
-            volume,
-            soldBy,
-            cost,
-            stock,
-            showInPos ? 1 : 0,
-            image,
-            id
-        ).run();
+        const updates: string[] = [];
+        const values: any[] = [];
+
+        const { name, sku, category, price, volume, soldBy, cost, stock, showInPOS, image } = body;
+
+        if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+        if (sku !== undefined) { updates.push('sku = ?'); values.push(sku); }
+        if (category !== undefined) { updates.push('category = ?'); values.push(category); }
+
+        if (price !== undefined) {
+            const numericPrice = parseFloat(String(price));
+            updates.push('price = ?');
+            values.push(numericPrice);
+        }
+
+        if (volume !== undefined) { updates.push('volume = ?'); values.push(volume); }
+        if (soldBy !== undefined) { updates.push('unit_type = ?'); values.push(soldBy); }
+        if (cost !== undefined) { updates.push('cost = ?'); values.push(cost); }
+        if (stock !== undefined) { updates.push('stock_quantity = ?'); values.push(stock); }
+
+        if (showInPOS !== undefined) {
+            updates.push('show_in_pos = ?');
+            values.push(showInPOS ? 1 : 0);
+        }
+
+        if (image !== undefined) { updates.push('image_url = ?'); values.push(image); }
+
+        if (updates.length > 0) {
+            values.push(id); // For WHERE clause
+            const query = `UPDATE products SET ${updates.join(', ')} WHERE id = ?`;
+            console.log("Partial Update Query:", query);
+            await db.prepare(query).bind(...values).run();
+        }
 
         return NextResponse.json({ success: true });
     } catch (e: any) {
-        return NextResponse.json({ error: e.message || 'Failed to update product' }, { status: 500 });
+        console.error("Product Update Error:", e);
+        return NextResponse.json({
+            message: e.message || 'Failed to update product',
+            details: e.toString()
+        }, { status: 500 });
     }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = params;
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const { id } = await params;
+        const db = await getDB();
 
         await db.prepare('DELETE FROM products WHERE id = ?').bind(id).run();
 
         return NextResponse.json({ success: true });
-    } catch (e) {
-        return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+    } catch (e: any) {
+        console.error("Product Delete Error:", e);
+        return NextResponse.json({ message: e.message || 'Failed to delete product' }, { status: 500 });
     }
 }

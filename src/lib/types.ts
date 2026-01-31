@@ -6,21 +6,48 @@ export interface Product {
     cost?: number;
     volume?: number | string;
     category?: string | Category;
-    showInPos?: boolean;
+    showInPOS?: boolean;
     image?: string;
     stock?: number;
 }
 
+
+export interface Ingredient {
+    id: string | number; // Product ID
+    name?: string;       // Denormalized name
+    quantity: number;
+    unitCost?: number;
+    priceBasis?: 'cost' | 'price';
+    soldBy?: 'quantity' | 'volume';
+}
+
+export interface ServiceVariant {
+    id?: string | number;
+    name: string;
+    price: number;
+    products?: Ingredient[]; // Variant specific ingredients
+}
+
 export interface CarwashService {
-    _id: string;
+    _id: string; // or id
     name: string;
     description?: string;
     category?: string | Category;
-    // Carwash specific pricing
-    price_sedan: number;
-    price_suv: number;
-    price_truck: number;
-    duration_minutes: number;
+    image?: string;
+
+    // Pricing & Cost
+    servicePrice: number;
+    laborCost: number;
+    laborCostType: 'fixed' | 'percentage';
+
+    durationMinutes: number;
+
+    // Complex structures
+    products?: Ingredient[]; // Base ingredients
+    variants?: ServiceVariant[];
+
+    active?: boolean;
+    showInPOS?: boolean;
 }
 
 export interface Category {
@@ -30,5 +57,5 @@ export interface Category {
 
 // Helper guard
 export function isCarwashService(item: Product | CarwashService): item is CarwashService {
-    return 'price_sedan' in item;
+    return 'servicePrice' in item;
 }

@@ -4,6 +4,7 @@ import { Lato } from 'next/font/google';
 import "./globals.css";
 import { MainNav } from "../components/MainNav";
 import { Toaster } from 'sonner';
+import DynamicTitle from "@/components/DynamicTitle";
 
 const lato = Lato({
   subsets: ['latin'],
@@ -49,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${lato.variable} flex flex-col h-screen overflow-hidden`}>
+        <DynamicTitle />
         <MainNav />
         {/* This is where the AdminLayout component is rendered when navigating to /admin
           - The MainNav is ABOVE all children, including the AdminLayout.

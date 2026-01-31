@@ -20,6 +20,7 @@ import PageHeader from '@/components/admin/PageHeader';
 interface Employee {
     _id: string;
     name: string;
+    username: string;
     role: string;
     pin: string;
     contactInfo: {
@@ -46,7 +47,9 @@ interface Role {
 
 const EMPTY_EMPLOYEE_FORM: EmployeeFormData = {
     name: '',
-    role: 'staff',
+    username: '',
+    password: '',
+    role: '',
     pin: '',
     contactInfo: { phone: '', email: '' },
     address: '',
@@ -110,7 +113,7 @@ export default function AdminEmployeesPage() {
     const [employeeFormData, setEmployeeFormData] = useState<EmployeeFormData>(EMPTY_EMPLOYEE_FORM);
     const [roleFormData, setRoleFormData] = useState<RoleFormData>(EMPTY_ROLE_FORM);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     // --- Data Fetching ---
     const fetchEmployees = async () => {
@@ -119,7 +122,7 @@ export default function AdminEmployeesPage() {
         try {
             const res = await fetch(`${API_URL}/employees`);
             if (!res.ok) throw new Error('Failed to fetch employees');
-            const data = await res.json();
+            const data = await res.json() as Employee[];
             setEmployees(data);
         } catch (error) {
             console.error(error);
@@ -135,7 +138,7 @@ export default function AdminEmployeesPage() {
         try {
             const res = await fetch(`${API_URL}/roles`);
             if (!res.ok) throw new Error('Failed to fetch roles');
-            const data = await res.json();
+            const data = await res.json() as Role[];
             setRoles(data);
         } catch (error) {
             console.error(error);
@@ -159,13 +162,17 @@ export default function AdminEmployeesPage() {
     const filteredEmployees = useMemo(() => {
         if (!searchQuery) return employees;
         const lowerQ = searchQuery.toLowerCase();
-        return employees.filter(e =>
-            e.name.toLowerCase().includes(lowerQ) ||
-            e.contactInfo?.email?.toLowerCase().includes(lowerQ) ||
-            e.contactInfo?.phone?.includes(lowerQ) ||
-            e.role.toLowerCase().includes(lowerQ)
-        );
-    }, [employees, searchQuery]);
+        return employees.filter(e => {
+            // Look up role display name for search
+            const role = roles.find(r => r._id === e.role);
+            const roleDisplayName = role?.displayName || role?.name || e.role;
+
+            return e.name.toLowerCase().includes(lowerQ) ||
+                e.contactInfo?.email?.toLowerCase().includes(lowerQ) ||
+                e.contactInfo?.phone?.includes(lowerQ) ||
+                roleDisplayName.toLowerCase().includes(lowerQ);
+        });
+    }, [employees, roles, searchQuery]);
 
     const filteredRoles = useMemo(() => {
         if (!searchQuery) return roles;
@@ -175,6 +182,12 @@ export default function AdminEmployeesPage() {
             r.name.toLowerCase().includes(lowerQ)
         );
     }, [roles, searchQuery]);
+
+    // Helper to get role display name by ID (or fallback to the stored value if not found)
+    const getRoleDisplayName = (roleId: string) => {
+        const role = roles.find(r => r._id === roleId);
+        return role?.displayName || role?.name || roleId;
+    };
 
     // --- Handlers (Employee) ---
     const handleAddEmployeeClick = () => {
@@ -187,16 +200,21 @@ export default function AdminEmployeesPage() {
         setEditingId(employee._id);
         setEmployeeFormData({
             _id: employee._id,
-            name: employee.name,
-            role: employee.role,
+            name: employee.name || '',
+            username: employee.username || '',
+            password: '', // Password is not shown when editing - leave blank to keep current
+            role: employee.role || '',
             pin: employee.pin || '',
-            contactInfo: { ...employee.contactInfo },
+            contactInfo: {
+                phone: employee.contactInfo?.phone || '',
+                email: employee.contactInfo?.email || ''
+            },
             address: employee.address || '',
-            status: employee.status,
-            compensation: employee.compensation || {
-                payType: 'hourly',
-                rate: 0,
-                commission: 0
+            status: employee.status || 'active',
+            compensation: {
+                payType: employee.compensation?.payType || 'hourly',
+                rate: employee.compensation?.rate ?? 0,
+                commission: employee.compensation?.commission ?? 0
             }
         });
         setIsEmployeeModalOpen(true);
@@ -243,7 +261,7 @@ export default function AdminEmployeesPage() {
 
             if (!res.ok) throw new Error('Failed to save');
 
-            const savedEmployee = await res.json();
+            const savedEmployee = await res.json() as Employee;
 
             if (editingId) {
                 setEmployees(prev => prev.map(e => e._id === editingId ? savedEmployee : e));
@@ -310,7 +328,7 @@ export default function AdminEmployeesPage() {
 
             if (!res.ok) throw new Error('Failed to save role');
 
-            const savedRole = await res.json();
+            const savedRole = await res.json() as Role;
 
             if (editingId) {
                 setRoles(prev => prev.map(r => r._id === editingId ? savedRole : r));
@@ -419,13 +437,14 @@ export default function AdminEmployeesPage() {
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-gray-900">{employee.name}</div>
-                                                        <div className="text-xs text-gray-400">PIN: {employee.pin || '****'}</div>
+                                                        <div className="text-xs text-gray-500 font-medium">@{employee.username}</div>
+                                                        <div className="text-[10px] text-gray-400">PIN: {employee.pin || '****'}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">
-                                                    {employee.role}
+                                                    {getRoleDisplayName(employee.role)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">

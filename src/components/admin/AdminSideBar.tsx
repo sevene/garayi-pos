@@ -88,7 +88,7 @@ export default function AdminSideBar() {
                 </button>
             </div>
 
-            <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar overflow-x-hidden">
+            <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {NAV_ITEMS.map((item) => {
                     const hasChildren = item.children && item.children.length > 0;
                     const isExpanded = expandedMenus.includes(item.name);

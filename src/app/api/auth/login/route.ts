@@ -1,10 +1,8 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { hashPassword, createSession } from '@/lib/auth';
+import { getDB } from '@/lib/db';
 
-
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
     try {
         const { username, password } = (await req.json()) as any;
 
@@ -12,16 +10,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
         }
 
-        // Use OpenNext Cloudflare Context
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = await getDB();
 
         // Hash the input password
         const hashedPassword = await hashPassword(password);
 
-        // Verify against DB
+        // Verify against DB (using employees table)
+        // We use 'username' for matching now
         const { results } = await db.prepare(
-            'SELECT * FROM users WHERE username = ? AND password_hash = ?'
+            'SELECT * FROM employees WHERE username = ? AND password_hash = ?'
         ).bind(username, hashedPassword).all();
 
         const user = results[0] as any;
@@ -32,9 +29,9 @@ export async function POST(req: NextRequest) {
 
         // Create Session
         const token = await createSession({
-            userId: user.id,
-            username: user.username,
-            role: user.role
+            userId: user.id || user.ID,
+            username: user.username || user.name || 'Unknown', // Prefer username for session identification
+            role: user.role || 'staff'
         });
 
         const response = NextResponse.json({ success: true, redirect: '/admin/dashboard/overview' });

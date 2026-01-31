@@ -16,10 +16,10 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/admin/PageHeader';
 
 const MOCK_PRODUCTS: Product[] = [
-    { _id: '1', name: 'Espresso', price: 120, cost: 80, volume: '30ml', category: 'Coffee', stock: 50, sku: 'COF-001', image: '', showInPos: true },
-    { _id: '2', name: 'Caramel Macchiato', price: 180, cost: 120, volume: '250ml', category: 'Coffee', stock: 12, sku: 'COF-002', image: '', showInPos: true },
-    { _id: '3', name: 'Croissant', price: 85, cost: 40, volume: '1pc', category: 'Pastry', stock: 5, sku: 'PAS-001', image: '', showInPos: true },
-    { _id: '4', name: 'Iced Tea', price: 90, cost: 30, volume: '350ml', category: 'Beverage', stock: 100, sku: 'BEV-001', image: '', showInPos: true },
+    { _id: '1', name: 'Espresso', price: 120, cost: 80, volume: '30ml', category: 'Coffee', stock: 50, sku: 'COF-001', image: '', showInPOS: true },
+    { _id: '2', name: 'Caramel Macchiato', price: 180, cost: 120, volume: '250ml', category: 'Coffee', stock: 12, sku: 'COF-002', image: '', showInPOS: true },
+    { _id: '3', name: 'Croissant', price: 85, cost: 40, volume: '1pc', category: 'Pastry', stock: 5, sku: 'PAS-001', image: '', showInPOS: true },
+    { _id: '4', name: 'Iced Tea', price: 90, cost: 30, volume: '350ml', category: 'Beverage', stock: 100, sku: 'BEV-001', image: '', showInPOS: true },
 ];
 
 export default function AdminProductsPage() {
@@ -91,11 +91,11 @@ export default function AdminProductsPage() {
     };
 
     const handleTogglePos = async (product: Product) => {
-        const newStatus = !product.showInPos;
+        const newStatus = !product.showInPOS;
 
         // Optimistic update
         setProducts(prev => prev.map(p =>
-            p._id === product._id ? { ...p, showInPos: newStatus } : p
+            p._id === product._id ? { ...p, showInPOS: newStatus } : p
         ));
 
         try {
@@ -105,17 +105,21 @@ export default function AdminProductsPage() {
             const response = await fetch(`${API_URL}/products/${product._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ showInPos: newStatus }),
+                body: JSON.stringify({ showInPOS: newStatus }),
             });
 
             if (!response.ok) {
                 throw new Error('Failed to update status');
             }
+
+            // Re-fetch to ensure server state is synced
+            fetchProducts();
+            toast.success("Product visibility updated.");
         } catch (error) {
             console.error("Error updating POS status:", error);
             // Revert on error
             setProducts(prev => prev.map(p =>
-                p._id === product._id ? { ...p, showInPos: !newStatus } : p
+                p._id === product._id ? { ...p, showInPOS: !newStatus } : p
             ));
             toast.error("Failed to update product status. Please try again.");
         }
@@ -244,14 +248,14 @@ export default function AdminProductsPage() {
                                                         type="checkbox"
                                                         name={`toggle-${product._id}`}
                                                         id={`toggle-${product._id}`}
-                                                        checked={product.showInPos !== false}
+                                                        checked={product.showInPOS !== false}
                                                         onChange={() => handleTogglePos(product)}
                                                         className="toggle-checkbox absolute block w-3 h-3 rounded-full bg-white border appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-full checked:border-lime-500"
                                                         style={{ top: '2px', left: '2px' }}
                                                     />
                                                     <label
                                                         htmlFor={`toggle-${product._id}`}
-                                                        className={`toggle-label block overflow-hidden w-7 h-4 rounded-full cursor-pointer transition-colors duration-200 ${product.showInPos !== false ? 'bg-lime-500' : 'bg-gray-300'}`}
+                                                        className={`toggle-label block overflow-hidden w-7 h-4 rounded-full cursor-pointer transition-colors duration-200 ${product.showInPOS !== false ? 'bg-lime-500' : 'bg-gray-300'}`}
                                                     ></label>
                                                 </div>
                                             </div>

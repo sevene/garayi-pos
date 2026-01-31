@@ -50,10 +50,10 @@ const TicketsListView = () => {
                 )}
 
                 {activeTickets.map((ticket: any) => {
-                    // Recalculate totals for display to ensure consistency
-                    const sub = ticket.items.reduce((acc: number, item: any) => acc + (item.unitPrice * item.quantity), 0);
-                    const tax = sub * taxRate;
-                    const displayTotal = sub + tax;
+                    // Use stored values if available, otherwise calculate with current tax rate
+                    const sub = ticket.subtotal ?? ticket.items.reduce((acc: number, item: any) => acc + (item.unitPrice * item.quantity), 0);
+                    const tax = ticket.taxAmount ?? (sub * (ticket.taxRate ?? taxRate));
+                    const displayTotal = ticket.total || (sub + tax);
 
                     return (
                         <div

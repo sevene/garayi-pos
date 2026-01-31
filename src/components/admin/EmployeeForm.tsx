@@ -8,6 +8,8 @@ import { handleNumberInput } from '@/components/utils/inputHelpers';
 export interface EmployeeFormData {
     _id?: string;
     name: string;
+    username: string;
+    password: string;
     role: string;
     pin: string;
     contactInfo: {
@@ -25,6 +27,7 @@ export interface EmployeeFormData {
 
 
 interface RoleOption {
+    _id: string;
     name: string;
     displayName: string;
 }
@@ -101,15 +104,45 @@ export default function EmployeeForm({
                             value={formData.name}
                             onChange={e => handleChange('name', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white transition-all hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500"
-                            placeholder="e.g. John Doe"
                         />
                     </div>
+                </div>
+
+                {/* Username & Password */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Username</label>
+                        <input
+                            type="text"
+                            required
+                            value={formData.username}
+                            onChange={e => handleChange('username', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white transition-all hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500"
+                            placeholder="Login Username"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">
+                            Password {isEditing && <span className="font-normal text-gray-400">(leave blank to keep current)</span>}
+                        </label>
+                        <input
+                            type="password"
+                            required={!isEditing}
+                            value={formData.password}
+                            onChange={e => handleChange('password', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white transition-all hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500"
+                            placeholder={isEditing ? "••••••••" : "Enter password"}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Role</label>
                         <CustomSelect
                             value={formData.role}
                             onChange={(val) => handleChange('role', val)}
-                            options={roles.length > 0 ? roles.map(r => ({ label: r.displayName, value: r.name })) : []}
+                            options={roles.length > 0 ? roles.map(r => ({ label: r.displayName, value: r._id })) : []}
                             placeholder="Select Role"
                             className="w-full"
                         />
@@ -247,7 +280,7 @@ export default function EmployeeForm({
                         {isEditing ? 'Save Changes' : 'Create Employee'}
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

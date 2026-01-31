@@ -104,14 +104,14 @@ export default function ServiceForm({ initialData, isEditing = false }: ServiceF
                 // Fetch products
                 const resProducts = await fetch(`${API_URL}/products`);
                 if (resProducts.ok) {
-                    const data = await resProducts.json();
+                    const data = await resProducts.json() as Product[];
                     setProducts(data);
                 }
 
                 // Fetch categories
                 const resCategories = await fetch(`${API_URL}/categories`);
                 if (resCategories.ok) {
-                    const data = await resCategories.json();
+                    const data = await resCategories.json() as Category[];
                     setCategories(data);
                 }
             } catch (err) {
@@ -463,12 +463,12 @@ export default function ServiceForm({ initialData, isEditing = false }: ServiceF
                                         <div className="flex items-center gap-3 h-[38px]">
                                             <button
                                                 type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, showInPos: !(prev.showInPos ?? true) }))}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 ${(formData.showInPos ?? true) ? 'bg-lime-500' : 'bg-gray-200'
+                                                onClick={() => setFormData(prev => ({ ...prev, showInPOS: !(prev.showInPOS ?? true) }))}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 ${(formData.showInPOS ?? true) ? 'bg-lime-500' : 'bg-gray-200'
                                                     }`}
                                             >
                                                 <span
-                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(formData.showInPos ?? true) ? 'translate-x-6' : 'translate-x-1'
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(formData.showInPOS ?? true) ? 'translate-x-6' : 'translate-x-1'
                                                         }`}
                                                 />
                                             </button>

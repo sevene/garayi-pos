@@ -1,23 +1,111 @@
 -- Drop tables if they exist to ensure clean slate for new vertical
+DROP TABLE IF EXISTS service_variant_ingredients;
+DROP TABLE IF EXISTS service_variants;
+DROP TABLE IF EXISTS service_ingredients;
 DROP TABLE IF EXISTS ticket_items;
 DROP TABLE IF EXISTS tickets;
+DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS expenses;
+DROP TABLE IF EXISTS settings;
 
--- Create Products (Services) Table
+-- Create Settings Table
+CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1), -- Singleton row
+  name TEXT DEFAULT 'Garayi Carwash',
+  address_street TEXT,
+  currency TEXT DEFAULT 'PHP',
+  tax_rate REAL DEFAULT 0.08,
+  enable_notifications INTEGER DEFAULT 1,
+  theme TEXT DEFAULT 'light',
+  receipt_header TEXT,
+  receipt_footer TEXT,
+  printer_name TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+DROP TABLE IF EXISTS users;
+
+-- Create Categories Table
+CREATE TABLE IF NOT EXISTS categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  parent_id INTEGER,
+  active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_id) REFERENCES categories(id)
+);
+
+-- Create Products Table (Inventory Only)
 CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   sku TEXT,
   description TEXT,
-  price_sedan REAL NOT NULL,
-  price_suv REAL NOT NULL,
-  price_truck REAL NOT NULL,
-  category TEXT, -- 'Wash', 'Detal', 'Addon'
-  duration_minutes INTEGER DEFAULT 30
+  price REAL NOT NULL DEFAULT 0, -- Retail Price
+  category TEXT, -- Link to Category Name or ID (Legacy was loose, we can keep loose or FK)
+  -- keeping category as TEXT for now to match some legacy behavior, checking route.ts it seems to use ID cast to text or name.
+  -- Let's stick to what route.ts expects, which seems to contain category ID.
+  volume TEXT,
+  unit_type TEXT, -- 'piece', 'weight/volume'
+  cost REAL DEFAULT 0,
+  stock_quantity INTEGER DEFAULT 0,
+  show_in_pos INTEGER DEFAULT 1,
+  active INTEGER DEFAULT 1,
+  image_url TEXT
 );
 
--- Create Customers Table (Vital for Carwash)
+-- Create Services Table (Labor/Wash Only)
+CREATE TABLE IF NOT EXISTS services (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  category_id INTEGER,
+  servicePrice REAL DEFAULT 0,
+  laborCost REAL DEFAULT 0,
+  laborCostType TEXT DEFAULT 'fixed', -- 'fixed' or 'percentage'
+  durationMinutes INTEGER DEFAULT 0,
+  active INTEGER DEFAULT 1,
+  showInPos INTEGER DEFAULT 1,
+  image_url TEXT,
+  FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- Create Service Ingredients (Recipe) Table
+CREATE TABLE IF NOT EXISTS service_ingredients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id INTEGER NOT NULL,
+  product_id INTEGER NOT NULL, -- The ingredient product from inventory
+  quantity REAL DEFAULT 1,
+  unit_cost REAL DEFAULT 0,
+  price_basis TEXT DEFAULT 'cost',
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Create Service Variants Table
+CREATE TABLE IF NOT EXISTS service_variants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  price REAL NOT NULL,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+-- Create Service Variant Ingredients Table
+CREATE TABLE IF NOT EXISTS service_variant_ingredients (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   variant_id INTEGER NOT NULL,
+   product_id INTEGER NOT NULL,
+   quantity REAL DEFAULT 1,
+   FOREIGN KEY (variant_id) REFERENCES service_variants(id) ON DELETE CASCADE,
+   FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Create Customers Table
 CREATE TABLE IF NOT EXISTS customers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -33,11 +121,14 @@ CREATE TABLE IF NOT EXISTS tickets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   finished_at DATETIME,
-  total REAL NOT NULL,
+  subtotal REAL DEFAULT 0, -- Sum of item prices before tax
+  tax_rate REAL DEFAULT 0, -- Tax rate at time of order (e.g., 0.12 for 12%)
+  tax_amount REAL DEFAULT 0, -- Calculated tax amount
+  total REAL NOT NULL, -- Final total (subtotal + tax)
   status TEXT DEFAULT 'QUEUED', -- 'QUEUED', 'WASHING', 'DRYING', 'READY', 'PAID'
   payment_method TEXT,
   customer_id INTEGER,
-  plate_number TEXT, -- Denormalized for quick lookup
+  plate_number TEXT,
   FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
@@ -45,23 +136,17 @@ CREATE TABLE IF NOT EXISTS tickets (
 CREATE TABLE IF NOT EXISTS ticket_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ticket_id INTEGER NOT NULL,
-  product_id INTEGER,
+  product_id INTEGER, -- Nullable if it's a service? OR we unify ID space?
+  -- Ideally references products OR services. For now, let's keep it simple.
+  item_type TEXT DEFAULT 'service', -- 'service' or 'product'
+  item_id INTEGER, -- generic ID
   product_name TEXT NOT NULL,
-  service_type TEXT, -- 'SEDAN', 'SUV' price applied
   quantity INTEGER NOT NULL DEFAULT 1,
   unit_price REAL NOT NULL,
   FOREIGN KEY (ticket_id) REFERENCES tickets(id)
 );
 
--- Seed Data (Carwash Services)
-INSERT INTO products (name, sku, price_sedan, price_suv, price_truck, category, duration_minutes) VALUES
-('Basic Wash', 'W001', 150.00, 200.00, 250.00, 'Wash', 30),
-('Premium Wax', 'W002', 300.00, 400.00, 500.00, 'Wash', 60),
-('Interior Detail', 'D001', 1500.00, 1800.00, 2200.00, 'Detail', 180),
-('Engine Wash', 'A001', 250.00, 300.00, 350.00, 'Addon', 45);
-
 -- Create Users Table
-DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
@@ -70,50 +155,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- Seed Admin User
--- Password is 'admin123' (hashed for demo purposes, in real app use robust hashing)
--- For this demo we will use simple direct comparison or a known hash if strict
--- To keep it simple for now, we will store a plain text password in the seed for the very first login logic to hashing it later,
--- OR better, we simply assume the auth logic will verify against this.
--- Let's use a placeholder hash for 'admin123' to be realistic.
--- SHA-256('admin123') = 240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9
 INSERT INTO users (username, password_hash, role) VALUES
 ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');
-
--- Create Employees Table
-CREATE TABLE IF NOT EXISTS employees (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  role TEXT,
-  phone TEXT,
-  salary_rate REAL,
-  salary_type TEXT, -- 'fixed', 'commission'
-  active INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create Expenses Table
-CREATE TABLE IF NOT EXISTS expenses (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  amount REAL NOT NULL,
-  category TEXT NOT NULL,
-  description TEXT,
-  date DATETIME DEFAULT CURRENT_TIMESTAMP,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Seed an employee
-INSERT INTO employees (name, role, salary_type) VALUES ('Staff 1', 'Staff', 'commission');
-
--- Create Settings Table
-CREATE TABLE IF NOT EXISTS settings (
-  id INTEGER PRIMARY KEY DEFAULT 1,
-  name TEXT DEFAULT 'Garayi Carwash',
-  address TEXT,
-  currency TEXT DEFAULT 'PHP',
-  tax_rate REAL DEFAULT 0.08,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Seed Initial Settings
 INSERT OR IGNORE INTO settings (id, name, currency) VALUES (1, 'Garayi Carwash', 'PHP');

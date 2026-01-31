@@ -27,7 +27,9 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
         const lower = searchTerm.toLowerCase();
         return customers.filter((c: any) =>
             c.name.toLowerCase().includes(lower) ||
-            (c.contactInfo && c.contactInfo.includes(lower))
+            (c.contactInfo && c.contactInfo.toLowerCase().includes(lower)) ||
+            (c.plateNumber && c.plateNumber.toLowerCase().includes(lower)) ||
+            (c.phone && c.phone.includes(lower))
         );
     }, [searchTerm, customers]);
 
@@ -81,22 +83,65 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                             </button>
                         </div>
 
-                        {/* Vehicle Selector for Current Customer */}
+                        {/* Vehicle Selector for Current Customer (Multi-Select) */}
                         {currentCustomer.cars && currentCustomer.cars.length > 0 && (
                             <div className="mt-3">
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Selected Vehicle</label>
-                                <CustomSelect
-                                    options={currentCustomer.cars.map((car: any) => ({
-                                        label: `${car.plateNumber} - ${car.makeModel || 'Unknown'}`,
-                                        value: car.plateNumber
-                                    }))}
-                                    value={currentTicketName.includes(' - ') ? currentTicketName.split(' - ')[1] : currentCustomer.cars[0].plateNumber}
-                                    onChange={(plate) => {
-                                        const autoName = `${currentCustomer.name} - ${plate}`;
-                                        setCurrentTicketName(autoName);
-                                    }}
-                                    className="w-full"
-                                />
+                                <label className="text-xs font-medium text-gray-500 mb-2 block">Link Vehicles to Ticket</label>
+                                <div className="space-y-2">
+                                    {currentCustomer.cars.map((car: any) => {
+                                        // Check if this plate is currently in the ticket name
+                                        const isSelected = currentTicketName.includes(car.plateNumber);
+                                        return (
+                                            <button
+                                                key={car.id}
+                                                onClick={() => {
+                                                    let newTicketName = currentTicketName;
+                                                    const plate = car.plateNumber;
+
+                                                    // Parse existing plates from the name part after " - "
+                                                    const parts = currentTicketName.split(' - ');
+                                                    const baseName = parts[0];
+                                                    const potentialPlates = parts.length > 1 ? parts[1].split(', ') : [];
+
+                                                    let newPlates: string[] = [];
+
+                                                    if (isSelected) {
+                                                        // Remove it
+                                                        newPlates = potentialPlates.filter(p => p !== plate && p.trim() !== '');
+                                                    } else {
+                                                        // Add it
+                                                        // Check if we are starting fresh (i.e. if the suffix isn't a known plate, maybe just overwrite)
+                                                        // But to be simple, if we have plates, valid plates, keep them.
+                                                        newPlates = [...potentialPlates, plate];
+                                                    }
+
+                                                    // Rebuild Name
+                                                    // If no plates selected, just use Customer Name
+                                                    if (newPlates.length === 0) {
+                                                        newTicketName = baseName;
+                                                    } else {
+                                                        newTicketName = `${baseName} - ${newPlates.join(', ')}`;
+                                                    }
+
+                                                    setCurrentTicketName(newTicketName);
+                                                }}
+                                                className={`w-full flex items-center justify-between p-2 rounded-lg border text-sm transition-all ${isSelected
+                                                        ? 'bg-lime-50 border-lime-500 text-lime-900'
+                                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-lime-500 border-lime-500' : 'border-gray-300'
+                                                        }`}>
+                                                        {isSelected && <CheckCircleIcon className="w-3.5 h-3.5 text-white" />}
+                                                    </div>
+                                                    <span className="font-medium">{car.plateNumber}</span>
+                                                    <span className="text-gray-400 text-xs">- {car.makeModel}</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>

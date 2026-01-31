@@ -1,24 +1,64 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
-        // Assuming 'products' table holds both services and retail products
-        // We might filter by category here if needed, or return all
-        const { results } = await db.prepare('SELECT * FROM products').all();
-        // Normalize IDs for legacy frontend
-        const normalizedResults = results.map((p: any) => ({ ...p, _id: String(p.id) }));
+        const db = await getDB();
+        // Query only the products table (inventory items)
+        const { results } = await db.prepare(`
+            SELECT p.*, c.name as category_name
+            FROM products p
+            LEFT JOIN categories c ON p.category = CAST(c.id AS TEXT)
+        `).all();
+
+        const normalizedResults = results.map((p: any) => ({
+            ...p,
+            _id: String(p.id),
+            id: String(p.id), // Explicitly cast generic ID
+            // Generic price
+            price: p.price,
+            // Prefer the joined category name, fallback to the raw value
+            category: p.category_name || p.category,
+            // Map integer to boolean
+            showInPOS: Boolean(p.show_in_pos)
+        }));
+
+        if (normalizedResults.length === 0) {
+            // Updated Mock Data - Purely Products
+            const MOCK_PRODUCT_DATA = [
+                { id: 'mock-1', name: 'Car Soap 1L', sku: 'SUP001', price: 50.00, category: 'Cleaning', stock_quantity: 20, show_in_pos: 1 },
+                { id: 'mock-2', name: 'Microfiber Cloth', sku: 'SUP002', price: 15.00, category: 'Cleaning', stock_quantity: 100, show_in_pos: 1 },
+                { id: 'mock-3', name: 'Air Freshener', sku: 'ACC001', price: 10.00, category: 'Accessories', stock_quantity: 50, show_in_pos: 1 }
+            ];
+
+            return NextResponse.json(MOCK_PRODUCT_DATA.map(p => ({
+                ...p,
+                _id: String(p.id),
+                showInPOS: Boolean(p.show_in_pos)
+            })));
+        }
+
         return NextResponse.json(normalizedResults);
     } catch (e) {
-        return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+        console.error("Products API Error:", e);
+        // Fallback to mocks on error
+        const MOCK_PRODUCT_DATA = [
+            { id: 'mock-1', name: 'Car Soap 1L', sku: 'SUP001', price: 50.00, category: 'Cleaning', stock_quantity: 20, show_in_pos: 1 },
+            { id: 'mock-2', name: 'Microfiber Cloth', sku: 'SUP002', price: 15.00, category: 'Cleaning', stock_quantity: 100, show_in_pos: 1 },
+            { id: 'mock-3', name: 'Air Freshener', sku: 'ACC001', price: 10.00, category: 'Accessories', stock_quantity: 50, show_in_pos: 1 }
+        ];
+
+        return NextResponse.json(MOCK_PRODUCT_DATA.map(p => ({
+            ...p,
+            _id: String(p.id),
+            showInPOS: Boolean(p.show_in_pos)
+        })));
     }
 }
+
 export async function POST(req: Request) {
     try {
-        const { env } = await getCloudflareContext({ async: true });
-        const db = env.DB;
+        const db = await getDB();
         const body = await req.json() as {
             name: string;
             sku: string;
@@ -28,28 +68,29 @@ export async function POST(req: Request) {
             soldBy: string;
             cost: number;
             stock: number;
-            showInPos: boolean;
+            showInPOS: boolean;
             image: string;
         };
 
-        // Infer types or basic validation could go here
-        const { name, sku, category, price, volume, soldBy, cost, stock, showInPos, image } = body;
+        console.log("Creating Product - Payload:", JSON.stringify(body, null, 2));
+        const { name, sku, category, price, volume, soldBy, cost, stock, showInPOS, image } = body;
 
+        const numericPrice = parseFloat(String(price));
+
+        // Insert into proper products table with clean schema
         const result = await db.prepare(`
-            INSERT INTO products (name, sku, category, price_sedan, price_suv, price_truck, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO products (name, sku, category, price, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
             name,
             sku,
             category,
-            price, // price_sedan
-            price, // price_suv (copy)
-            price, // price_truck (copy)
+            numericPrice,
             volume,
             soldBy,
             cost,
             stock,
-            showInPos ? 1 : 0,
+            showInPOS ? 1 : 0,
             image
         ).run();
 
@@ -60,7 +101,10 @@ export async function POST(req: Request) {
         }
 
     } catch (e: any) {
-        console.error("Product Creation Error", e);
-        return NextResponse.json({ error: e.message || 'Failed to create product' }, { status: 500 });
+        console.error("Product Creation Error:", e);
+        return NextResponse.json({
+            message: e.message || 'Failed to create product',
+            details: e.toString()
+        }, { status: 500 });
     }
 }

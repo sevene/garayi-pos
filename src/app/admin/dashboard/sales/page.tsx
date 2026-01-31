@@ -32,7 +32,7 @@ interface SalesData {
 }
 
 export default function SalesPage() {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
     const { formatCurrency } = useSettings();
 
     /* -------------------------------------------------------------------------
@@ -78,7 +78,7 @@ export default function SalesPage() {
             // Let's use the existing tickets endpoint and process it for now.
             const res = await fetch(`${API_URL}/tickets?all=true`); // Fetching all effectively for now, would optimize later
             if (res.ok) {
-                let tickets = await res.json();
+                let tickets: any[] = await res.json();
 
                 // CLIENT SIDE FILTERING (Temporary until backend supports sophisticated query)
                 // Parse strings manually to ensure Local Time (YYYY-MM-DD input)

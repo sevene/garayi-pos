@@ -36,6 +36,9 @@ interface Ticket {
     name: string;
     status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
     items: TicketItem[];
+    subtotal?: number; // Stored subtotal at time of order
+    taxRate?: number; // Stored tax rate at time of order
+    taxAmount?: number; // Stored tax amount at time of order
     total: number;
     createdAt: string;
     // Financial Snapshots
@@ -79,7 +82,7 @@ interface Expense {
 
 export default function OverviewPage() {
     const { formatCurrency } = useSettings();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     // --- State ---
     const [tickets, setTickets] = useState<Ticket[]>([]);

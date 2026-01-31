@@ -32,8 +32,8 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
 
     // Combine and memoize items
     const allItems = useMemo(() => {
-        const services = initialServices.filter(s => s.showInPos !== false);
-        const products = initialProducts.filter(p => p.showInPos !== false);
+        const services = initialServices.filter(s => s.showInPOS !== false);
+        const products = initialProducts.filter(p => p.showInPOS !== false);
         return [...services, ...products];
     }, [initialServices, initialProducts]);
 
@@ -75,7 +75,7 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
             price: variant ? variant.price : service.servicePrice,
             cost: 0, // Not needed for POS display
             volume: 0, // Not needed
-            showInPos: true
+            showInPOS: true
         };
 
         addItemToCart(cartItem);
@@ -140,9 +140,10 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
             }
         } else {
             // If 'all', we want to show ALL items in a SINGLE grid to use the space efficiently.
-            // We still respect category order for the items themselves.
+            // Include ALL items from groupedItems, not just those with matching categories
             let combinedItems: POSItem[] = [];
 
+            // First, add items from known categories in order
             visibleCategories.forEach(cat => {
                 const items = groupedItems[cat._id];
                 if (items && items.length > 0) {
@@ -150,10 +151,16 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                 }
             });
 
-            // Handle Uncategorized
-            if (groupedItems['uncategorized'] && groupedItems['uncategorized'].length > 0) {
-                combinedItems.push(...groupedItems['uncategorized']);
-            }
+            // Then, add items from any other category groups (including 'uncategorized' and unmatched category IDs)
+            Object.keys(groupedItems).forEach(catId => {
+                // Skip if already added via visibleCategories
+                if (visibleCategories.some(vc => vc._id === catId)) return;
+
+                const items = groupedItems[catId];
+                if (items && items.length > 0) {
+                    combinedItems.push(...items);
+                }
+            });
 
             if (combinedItems.length > 0) {
                 // Return one single section

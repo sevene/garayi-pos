@@ -43,3 +43,16 @@ next-env.d.ts
 # Cloudflare / OpenNext
 .wrangler
 .open-next
+
+# Local database
+*.db
+local.db
+
+# IDE / Workspace files
+*.code-workspace
+
+# Log files
+*.log
+
+# Worker configuration (generated)
+worker-configuration.d.ts

@@ -69,8 +69,10 @@ export default function AdminCustomersPage() {
         try {
             const res = await fetch(`${API_URL}/customers`);
             if (!res.ok) throw new Error('Failed to fetch customers');
-            const data = await res.json();
-            setCustomers(data);
+            const responseData = await res.json() as any;
+            // Handle both array and paginated object responses
+            const data = Array.isArray(responseData) ? responseData : (responseData.data || []);
+            setCustomers(data as Customer[]);
         } catch (error) {
             console.error(error);
             toast.error('Failed to load customers');
@@ -151,7 +153,7 @@ export default function AdminCustomersPage() {
 
             if (!res.ok) throw new Error('Failed to save');
 
-            const savedCustomer = await res.json();
+            const savedCustomer = await res.json() as Customer;
 
             if (editingId) {
                 setCustomers(prev => prev.map(c => c._id === editingId ? savedCustomer : c));
@@ -241,7 +243,7 @@ export default function AdminCustomersPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-lime-100 flex items-center justify-center text-lime-700 font-bold text-lg shrink-0">
-                                                    {customer.name.charAt(0).toUpperCase()}
+                                                    {(customer.name || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-gray-900">{customer.name}</div>
@@ -273,24 +275,22 @@ export default function AdminCustomersPage() {
                                         <td className="px-6 py-4 text-center">
 
                                             {customer.cars && customer.cars.length > 0 ? (
-                                                <div className="flex flex-col gap-2 items-start">
+                                                <div className="flex flex-col gap-2 items-center">
                                                     {customer.cars.map((car, idx) => (
-                                                        <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 inline-block min-w-[200px] text-left">
-                                                            <div className="flex items-center gap-3">
+                                                        <div key={idx} className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 inline-block min-w-[200px]">
+                                                            <div className="flex items-center gap-3 justify-left">
+                                                                <span
+                                                                    className="w-6 h-6 rounded-sm border border-gray-300 shadow-sm"
+                                                                    style={{ backgroundColor: car.color }}
+                                                                    title={car.color}
+                                                                />
                                                                 <div>
-                                                                    <div className="font-bold text-gray-800 leading-none mb-1.5 uppercase">
+                                                                    <div className="font-bold text-gray-800 leading-none mb-1.5 uppercase text-center">
                                                                         {car.plateNumber || 'No Plate'}
                                                                     </div>
-                                                                    <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
-                                                                        {car.color && (
-                                                                            <span
-                                                                                className="w-2.5 h-2.5 rounded-full border border-gray-300 shadow-sm"
-                                                                                style={{ backgroundColor: car.color }}
-                                                                                title={car.color}
-                                                                            />
-                                                                        )}
+                                                                    <div className="text-xs text-gray-500 flex items-center justify-center gap-1.5 flex-wrap">
                                                                         <span>
-                                                                            {[car.color, car.makeModel].filter(Boolean).join(' ')}
+                                                                            {car.makeModel}
                                                                         </span>
                                                                     </div>
                                                                 </div>

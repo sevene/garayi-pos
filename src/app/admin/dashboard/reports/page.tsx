@@ -63,7 +63,7 @@ interface Product {
 
 export default function ReportsPage() {
     const { formatCurrency } = useSettings();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
     // --- State ---
     const [activeTab, setActiveTab] = useState<'SALES' | 'CREW' | 'ITEMS'>('SALES');

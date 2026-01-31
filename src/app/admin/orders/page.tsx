@@ -19,6 +19,9 @@ interface Ticket {
     name: string;
     status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
     items: TicketItem[];
+    subtotal?: number; // Stored subtotal at time of order
+    taxRate?: number; // Stored tax rate at time of order
+    taxAmount?: number; // Stored tax amount at time of order
     total: number;
     paymentMethod?: string;
     createdAt: string;
@@ -43,8 +46,7 @@ export default function AdminOrdersPage() {
     // Expanded State
     const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
 
-    const { settings, formatCurrency } = useSettings();
-    const taxRate = settings?.taxRate || 0;
+    const { formatCurrency } = useSettings();
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -55,7 +57,7 @@ export default function AdminOrdersPage() {
         try {
             const res = await fetch(`${API_URL}/tickets?all=true`);
             if (!res.ok) throw new Error('Failed to fetch orders');
-            const data = await res.json();
+            const data = await res.json() as Ticket[];
             setTickets(data);
         } catch (err) {
             console.error(err);
@@ -98,11 +100,25 @@ export default function AdminOrdersPage() {
         });
     };
 
+    // Use stored total, or calculate from stored values, falling back to items calculation
     const calculateTotal = (ticket: Ticket) => {
         if (ticket.total) return ticket.total;
-        const subtotal = ticket.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
-        const tax = subtotal * taxRate;
+        // Fallback for legacy tickets without stored total
+        const subtotal = ticket.subtotal ?? ticket.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+        const tax = ticket.taxAmount ?? (subtotal * (ticket.taxRate ?? 0));
         return subtotal + tax;
+    };
+
+    // Get tax rate for display from the ticket's stored value
+    const getTicketTaxRate = (ticket: Ticket) => {
+        return ticket.taxRate ?? 0;
+    };
+
+    // Get tax amount for display from the ticket's stored value or calculate
+    const getTicketTaxAmount = (ticket: Ticket) => {
+        if (ticket.taxAmount !== undefined) return ticket.taxAmount;
+        const subtotal = ticket.subtotal ?? ticket.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+        return subtotal * (ticket.taxRate ?? 0);
     };
 
     const formatDate = (dateString: string) => {
@@ -379,13 +395,13 @@ export default function AdminOrdersPage() {
                                                                     <tr>
                                                                         <td colSpan={3} className="py-2 px-3 text-right font-bold text-gray-600">Subtotal</td>
                                                                         <td className="py-2 px-3 text-right font-bold text-gray-800">
-                                                                            {formatCurrency(ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0))}
+                                                                            {formatCurrency(ticket.subtotal ?? ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0))}
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
-                                                                        <td colSpan={3} className="py-1 px-3 text-right text-gray-500 text-xs">Tax ({Number((taxRate * 100).toFixed(2))}%)</td>
+                                                                        <td colSpan={3} className="py-1 px-3 text-right text-gray-500 text-xs">Tax ({Number((getTicketTaxRate(ticket) * 100).toFixed(2))}%)</td>
                                                                         <td className="py-1 px-3 text-right text-gray-500 text-xs">
-                                                                            {formatCurrency(ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0) * taxRate)}
+                                                                            {formatCurrency(getTicketTaxAmount(ticket))}
                                                                         </td>
                                                                     </tr>
                                                                 </tfoot>

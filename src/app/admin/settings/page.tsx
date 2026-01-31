@@ -16,6 +16,22 @@ import PageHeader from '@/components/admin/PageHeader';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+interface SettingsResponse {
+    name?: string;
+    address?: { street?: string };
+    currency?: string;
+    tax_rate?: number;
+    settings?: {
+        enableNotifications?: boolean;
+        theme?: string;
+    };
+    receipt?: {
+        header?: string;
+        footer?: string;
+        printerName?: string;
+    };
+}
+
 export default function AdminSettingsPage() {
     const [settings, setSettings] = useState({
         storeName: '',
@@ -38,7 +54,7 @@ export default function AdminSettingsPage() {
             try {
                 const res = await fetch(`${API_URL}/settings`);
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = await res.json() as SettingsResponse;
                     setSettings({
                         storeName: data.name || '',
                         storeAddress: data.address?.street || '',
@@ -72,9 +88,11 @@ export default function AdminSettingsPage() {
                 taxRate: (Number(settings.taxRate) || 0) / 100
             };
 
-            if (!API_URL) throw new Error("API URL not configured");
+            // If API_URL is strictly defined in env, use it. Otherwise, assume relative path for consistency in some setups.
+            // Often problems arise if API_URL is empty or misconfigured.
+            const url = API_URL ? `${API_URL}/settings` : '/api/settings';
 
-            const res = await fetch(`${API_URL}/settings`, {
+            const res = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -155,26 +173,31 @@ export default function AdminSettingsPage() {
 
                             <div className="grid gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                                    <label htmlFor="storeName" className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
                                     <input
                                         type="text"
+                                        placeholder="Enter store name"
+                                        id="storeName"
                                         value={settings.storeName}
                                         onChange={(e) => handleChange('storeName', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Store Address</label>
+                                    <label htmlFor="storeAddress" className="block text-sm font-medium text-gray-700 mb-1">Store Address</label>
                                     <textarea
                                         value={settings.storeAddress}
+                                        placeholder="Enter store address"
+                                        id="storeAddress"
                                         onChange={(e) => handleChange('storeAddress', e.target.value)}
                                         rows={3}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 outline-none resize-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
+                                    <label htmlFor="theme" className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
                                     <CustomSelect
+                                        id="theme"
                                         options={[
                                             { label: 'Light Mode', value: 'light' },
                                             { label: 'Dark Mode', value: 'dark' },
@@ -199,8 +222,9 @@ export default function AdminSettingsPage() {
 
                             <div className="grid gap-6 max-w-md">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                    <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                                     <CustomSelect
+                                        id="currency"
                                         options={[
                                             { label: 'Philippine Peso (PHP)', value: 'PHP' },
                                             { label: 'US Dollar (USD)', value: 'USD' },
@@ -212,9 +236,10 @@ export default function AdminSettingsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+                                    <label htmlFor="taxRate" className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
                                     <div className="relative">
                                         <input
+                                            id="taxRate"
                                             type="number"
                                             value={settings.taxRate}
                                             onChange={(e) => {
@@ -246,26 +271,29 @@ export default function AdminSettingsPage() {
 
                             <div className="grid gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Default Printer</label>
+                                    <label htmlFor="printerName" className="block text-sm font-medium text-gray-700 mb-1">Default Printer</label>
                                     <input
                                         type="text"
+                                        id="printerName"
                                         value={settings.printerName}
                                         onChange={(e) => handleChange('printerName', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Header Message</label>
+                                    <label htmlFor="receiptHeader" className="block text-sm font-medium text-gray-700 mb-1">Receipt Header Message</label>
                                     <input
                                         type="text"
+                                        id="receiptHeader"
                                         value={settings.receiptHeader}
                                         onChange={(e) => handleChange('receiptHeader', e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500/20 focus:border-lime-500 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Message</label>
+                                    <label htmlFor="receiptFooter" className="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Message</label>
                                     <textarea
+                                        id="receiptFooter"
                                         value={settings.receiptFooter}
                                         onChange={(e) => handleChange('receiptFooter', e.target.value)}
                                         rows={2}
@@ -292,12 +320,14 @@ export default function AdminSettingsPage() {
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
+                                            id="enableNotifications"
                                             type="checkbox"
                                             checked={settings.enableNotifications}
                                             onChange={(e) => handleChange('enableNotifications', e.target.checked)}
                                             className="sr-only peer"
                                         />
                                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-lime-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-lime-600"></div>
+                                        <span className="sr-only">Enable notifications</span>
                                     </label>
                                 </div>
                             </div>

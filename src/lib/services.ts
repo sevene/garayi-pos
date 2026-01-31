@@ -21,7 +21,7 @@ export interface Service {
     laborCostType?: 'fixed' | 'percentage';
     durationMinutes?: number;
     active: boolean;
-    showInPos?: boolean;
+    showInPOS?: boolean;
     createdAt?: string;
     updatedAt?: string;
     soldBy?: string;

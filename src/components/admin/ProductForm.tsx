@@ -19,7 +19,7 @@ interface ProductFormProps {
 
 interface ProductFormState extends Omit<Product, 'stock'> {
     stock: number | string;
-    showInPos: boolean;
+    showInPOS: boolean;
     soldBy: 'piece' | 'weight/volume';
 }
 
@@ -33,7 +33,7 @@ const emptyProduct: ProductFormState = {
     stock: '',
     sku: '',
     image: '',
-    showInPos: true,
+    showInPOS: true,
     soldBy: 'piece',
 };
 
@@ -64,7 +64,7 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
                 ...initialProduct,
                 category: categoryValue,
                 stock: initialProduct.stock ?? '',
-                showInPos: initialProduct.showInPos ?? true,
+                showInPOS: initialProduct.showInPOS ?? true,
                 soldBy: initialProduct.soldBy ?? 'piece',
             });
         }
@@ -84,19 +84,36 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
             };
 
             // Automatic Cost Calculation Logic
-            // Only recalculate if the relevant fields (price, volume, soldBy) are changing.
-            // This allows the user to manually override the cost if needed.
-            if ((name === 'price' || name === 'volume' || name === 'soldBy') &&
-                (updated.soldBy === 'weight/volume')) {
+            // Logic: If we are in 'weight/volume' mode, we often want to track Cost as "Price per Unit Volume" or similar?
+            // User Request: "It should suppose to change the value in the Cost"
+            // Interpretation: When I enter Price 100 and Volume 200ml, Cost should approximate unit cost?
+            // OR: Cost should default to Price if it's 0?
+            // The existing logic was: Cost = Price / Volume.
+            // Example: Price 2000, Volume 2000 (ml). Cost = 1.
 
+            if (name === 'price' || name === 'volume' || name === 'soldBy') {
                 const price = parseFloat(updated.price.toString());
-                // Extract numeric value from volume string (e.g., "250ml" -> 250)
-                const volumeStr = updated.volume.toString();
-                const volumeMatch = volumeStr.match(/^(\d+(\.\d+)?)/);
-                const volume = volumeMatch ? parseFloat(volumeMatch[0]) : 0;
 
-                if (!isNaN(price) && !isNaN(volume) && volume > 0) {
-                    updated.cost = (price / volume).toFixed(4); // High precision for unit cost
+                if (updated.soldBy === 'piece') {
+                    // For piece, usually Cost is entred manually, but user asked:
+                    // "if user selected Piece, then it should just get the Price"
+                    // This implies Cost = Price? Or just that the fancy calculation is skipped?
+                    // "it should just get the Price" likely means Cost field should be auto-filled with Price?
+                    // Let's assume Cost = Price for now based on request phrasing.
+                    if (!isNaN(price)) {
+                        updated.cost = price.toFixed(4);
+                    }
+                } else if (updated.soldBy === 'weight/volume') {
+                    // Extract numeric value from volume string (e.g., "250ml" -> 250)
+                    const volumeStr = updated.volume.toString().trim();
+                    const volumeMatch = volumeStr.match(/^(\d+(\.\d+)?)/);
+                    const volume = volumeMatch ? parseFloat(volumeMatch[0]) : 0;
+
+                    console.log(`Calc Cost: Price=${price}, Vol=${volume} (from ${volumeStr})`);
+
+                    if (!isNaN(price) && !isNaN(volume) && volume > 0) {
+                        updated.cost = (price / volume).toFixed(4); // High precision for unit cost
+                    }
                 }
             }
 
@@ -250,15 +267,15 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
                                 label="Sold By"
                                 value={formData.soldBy}
                                 onChange={(val) => {
-                                    // CustomSelect returns string | number, need to cast or handle change manually to match handleChange expectation if reused
-                                    // Or simply direct setFormData
-                                    // Simulating event for handleChange logic (calc cost) is tricky, better direct update but handling side effects
-                                    // But handleChange has complex logic for cost calculation.
-                                    // Let's defer to handleChange by creating synthetic event or extracting logic?
-                                    // Easier: duplicate logic or create synthetic event string.
+                                    // Create a synthetic event that mimics a standard input change
                                     const syntheticEvent = {
-                                        target: { name: 'soldBy', value: val, type: 'select-one' }
-                                    } as any;
+                                        target: {
+                                            name: 'soldBy',
+                                            value: val,
+                                            type: 'select-one',
+                                            checked: false
+                                        }
+                                    } as React.ChangeEvent<HTMLInputElement>;
                                     handleChange(syntheticEvent);
                                 }}
                                 options={[
@@ -315,19 +332,19 @@ export default function ProductForm({ initialProduct, categories = [], id }: Pro
                         <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
                             <input
                                 type="checkbox"
-                                name="showInPos"
-                                id="showInPos"
-                                checked={formData.showInPos}
+                                name="showInPOS"
+                                id="showInPOS"
+                                checked={formData.showInPOS}
                                 onChange={handleChange}
                                 className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-full checked:border-lime-500"
                                 style={{ top: '2px', left: '2px' }}
                             />
                             <label
-                                htmlFor="showInPos"
-                                className={`toggle-label block overflow-hidden h-7 rounded-full cursor-pointer transition-colors duration-200 ${formData.showInPos ? 'bg-lime-500' : 'bg-gray-300'}`}
+                                htmlFor="showInPOS"
+                                className={`toggle-label block overflow-hidden h-7 rounded-full cursor-pointer transition-colors duration-200 ${formData.showInPOS ? 'bg-lime-500' : 'bg-gray-300'}`}
                             ></label>
                         </div>
-                        <label htmlFor="showInPos" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                        <label htmlFor="showInPOS" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
                             Show in POS System
                             <span className="block text-xs text-gray-500 font-normal mt-0.5">
                                 If disabled, this product will be hidden from the Point of Sale interface.
