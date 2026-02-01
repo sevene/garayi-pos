@@ -13,10 +13,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
         currentCustomer,
         setCustomer,
         currentTicketName,
-        setCurrentTicketName,
-        employees,
-        selectedCrew,
-        toggleCrewMember
+        setCurrentTicketName
     } = useCart();
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +40,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                 >
                     <ChevronLeftIcon className="w-6 h-6" />
                 </button>
-                <h2 className="text-lg font-bold text-gray-800">Sort Ticket Details</h2>
+                <h2 className="text-lg font-bold text-gray-800">Select Customer</h2>
             </div>
 
             {/* Search Bar */}
@@ -148,30 +145,6 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                         )}
                     </div>
                 )}
-
-                {/* Crew Selection Section */}
-                <div className="p-4 border-b border-gray-100">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Service Crew</h3>
-
-                    <div className="flex flex-wrap gap-2 mb-3">
-                        {employees.map((emp: any) => {
-                            const isSelected = selectedCrew.includes(emp._id);
-                            return (
-                                <button
-                                    key={emp._id}
-                                    onClick={() => toggleCrewMember(emp._id)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isSelected
-                                        ? 'bg-lime-600 text-white shadow-md shadow-lime-200'
-                                        : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-                                        }`}
-                                >
-                                    {emp.name}
-                                    {isSelected && <CheckCircleIcon className="w-4 h-4" />}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
 
                 {/* Customer List */}
                 <div className="p-2">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
 import TicketsListView from './cart-panel/TicketsListView';
 import CustomerSelectionView from './cart-panel/CustomerSelectionView';
+import CrewSelectionView from './cart-panel/CrewSelectionView';
 import PaymentModal from './cart-panel/PaymentModal';
 import CartHeader from './cart-panel/CartHeader';
 import CartItemsList from './cart-panel/CartItemsList';
@@ -19,7 +20,7 @@ export function CartPanel() {
     } = useCart();
 
     // UI States
-    const [activeView, setActiveView] = useState<'MAIN' | 'CUSTOMER_SETUP'>('MAIN');
+    const [activeView, setActiveView] = useState<'MAIN' | 'CUSTOMER_SETUP' | 'CREW_SETUP'>('MAIN');
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     // Local inputs
@@ -67,6 +68,17 @@ export function CartPanel() {
     }
 
     // -------------------------------------------------------------------------
+    // VIEW: CREW SETUP
+    // -------------------------------------------------------------------------
+    if (activeView === 'CREW_SETUP') {
+        return (
+            <div className="w-[450px] bg-white flex flex-col h-full border-l border-gray-200 relative">
+                <CrewSelectionView onBack={() => setActiveView('MAIN')} />
+            </div>
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // VIEW: MAIN CART
     // -------------------------------------------------------------------------
     return (
@@ -81,6 +93,7 @@ export function CartPanel() {
                 ticketNameInput={ticketNameInput}
                 setTicketNameInput={setTicketNameInput}
                 onCustomerClick={() => setActiveView('CUSTOMER_SETUP')}
+                onCrewClick={() => setActiveView('CREW_SETUP')}
             />
 
             <CartItemsList />

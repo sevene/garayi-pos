@@ -88,6 +88,7 @@ interface CartContextType {
     employees: any[];
     selectedCrew: string[]; // IDs
     toggleCrewMember: (employeeId: string) => void;
+    clearCrew: () => void;
 }
 
 // =========================================================================
@@ -236,6 +237,10 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
                 return [...prev, employeeId];
             }
         });
+    }, []);
+
+    const clearCrew = useCallback(() => {
+        setSelectedCrew([]);
     }, []);
 
     // --- API Helpers ---
@@ -466,14 +471,15 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         currentCustomer,
         employees,
         selectedCrew,
-        toggleCrewMember
+        toggleCrewMember,
+        clearCrew
     }), [
         cartItems, viewMode, openTickets, currentTicketId, currentTicketName,
         isProcessing, isTicketsLoading, checkoutError, subtotal, tax, total, taxRate, currency, formatCurrency,
         addItemToCart, updateItemQuantity, removeItem, clearCart, setCurrentTicketName,
         switchToCartView, switchToTicketsView,
         fetchOpenTickets, loadTicket, checkout, saveTicket, deleteTicket,
-        customers, currentCustomer, employees, selectedCrew, toggleCrewMember
+        customers, currentCustomer, employees, selectedCrew, toggleCrewMember, clearCrew
     ]);
 
     return contextValue;
