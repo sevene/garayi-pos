@@ -35,7 +35,8 @@ export async function GET() {
                 productName: i.product_name,
                 quantity: i.quantity,
                 unitPrice: i.unit_price,
-                _id: i.id // Legacy might need this
+                _id: i.id, // Legacy might need this
+                crew: i.crew_snapshot ? JSON.parse(i.crew_snapshot) : []
             }));
 
             ticket._id = String(ticket.id); // Legacy uses string _id
@@ -89,10 +90,19 @@ export async function GET() {
                 ticket.name = `Order #${ticket.id}`;
             }
 
-            // Populate Crew
+            // Populate Crew (Global Assignments)
             try {
-                const crewRes = await db.prepare('SELECT employee_id FROM ticket_assignments WHERE ticket_id = ?').bind(ticket.id).all();
-                ticket.crew = crewRes.results.map((c: any) => String(c.employee_id));
+                const crewRes = await db.prepare(`
+                    SELECT ta.employee_id, e.name
+                    FROM ticket_assignments ta
+                    JOIN employees e ON ta.employee_id = e.id
+                    WHERE ta.ticket_id = ?
+                `).bind(ticket.id).all();
+
+                ticket.crew = crewRes.results.map((c: any) => ({
+                    id: String(c.employee_id),
+                    name: c.name || 'Unknown'
+                }));
             } catch (e) {
                 ticket.crew = [];
             }
@@ -167,11 +177,27 @@ export async function POST(req: NextRequest) {
         if (!res) throw new Error("Insert failed");
         const ticketId = res.id;
 
+        // Pre-fetch crew names for snapshots
+        const allCrewIds = new Set<string>();
+        if (body.items) {
+            body.items.forEach((item: any) => {
+                if (item.crew && Array.isArray(item.crew)) {
+                    item.crew.forEach((id: string) => allCrewIds.add(String(id)));
+                }
+            });
+        }
+        const crewMap = new Map<string, string>();
+        if (allCrewIds.size > 0) {
+            // Fetch all employees to map IDs to names
+            const emps = await db.prepare('SELECT id, name FROM employees').all();
+            emps.results.forEach((e: any) => crewMap.set(String(e.id), e.name));
+        }
+
         // Insert Items
         if (body.items && Array.isArray(body.items)) {
             const stmt = db.prepare(`
-                INSERT INTO ticket_items (ticket_id, product_id, product_name, quantity, unit_price, item_type, item_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ticket_items (ticket_id, product_id, product_name, quantity, unit_price, item_type, item_id, crew_snapshot)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `);
             const batch = body.items.map((item: any) => {
                 let itemId = item.productId;
@@ -179,6 +205,17 @@ export async function POST(req: NextRequest) {
                 if (itemId && String(itemId).includes('-')) {
                     itemId = String(itemId).split('-')[0];
                 }
+
+                // Create Crew Snapshot
+                let crewSnapshot = null;
+                if (item.crew && Array.isArray(item.crew) && item.crew.length > 0) {
+                    const snapshot = item.crew.map((id: string) => ({
+                        id,
+                        name: crewMap.get(String(id)) || 'Unknown'
+                    }));
+                    crewSnapshot = JSON.stringify(snapshot);
+                }
+
                 return stmt.bind(
                     ticketId,
                     item.productId,
@@ -186,7 +223,8 @@ export async function POST(req: NextRequest) {
                     item.quantity,
                     item.unitPrice,
                     'service', // Default to service for now
-                    itemId
+                    itemId,
+                    crewSnapshot
                 );
             });
 

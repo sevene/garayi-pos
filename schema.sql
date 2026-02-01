@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS ticket_items (
   product_name TEXT NOT NULL,
   quantity INTEGER NOT NULL DEFAULT 1,
   unit_price REAL NOT NULL,
+  crew_snapshot TEXT, -- JSON array of assigned crew names/ids at time of order
   FOREIGN KEY (ticket_id) REFERENCES tickets(id)
 );
 

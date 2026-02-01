@@ -83,12 +83,20 @@ interface CartContextType {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     currentCustomer: any;
 
-    // Crew
+    // Crew - Per Item
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     employees: any[];
-    selectedCrew: string[]; // IDs
-    toggleCrewMember: (employeeId: string) => void;
-    clearCrew: () => void;
+    itemCrew: Record<string, string[]>; // { itemId: [crewId1, crewId2] }
+    toggleItemCrew: (itemId: string, employeeId: string) => void;
+    getItemCrew: (itemId: string) => string[];
+    getAllAssignedCrew: () => string[]; // All unique crew across items
+    clearItemCrew: (itemId: string) => void;
+
+    // Crew Sidebar State
+    isCrewSidebarOpen: boolean;
+    activeCrewItemId: string | null;
+    openCrewSidebar: (itemId?: string) => void;
+    closeCrewSidebar: () => void;
 }
 
 // =========================================================================
@@ -126,10 +134,14 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [currentCustomer, setCurrentCustomer] = useState<any | null>(null);
 
-    // Crew Management
+    // Crew Management - Per Item
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [employees] = useState<any[]>(initialEmployees);
-    const [selectedCrew, setSelectedCrew] = useState<string[]>([]);
+    const [itemCrew, setItemCrew] = useState<Record<string, string[]>>({}); // { itemId: [crewId1, crewId2] }
+
+    // Crew Sidebar State
+    const [isCrewSidebarOpen, setIsCrewSidebarOpen] = useState(false);
+    const [activeCrewItemId, setActiveCrewItemId] = useState<string | null>(null);
 
     // --- Fetch Settings (Tax Rate) ---
     useEffect(() => {
@@ -221,7 +233,9 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         setCurrentTicketId(null);
         setCurrentTicketName('New Order');
         setCurrentCustomer(null);
-        setSelectedCrew([]);
+        setItemCrew({});
+        setIsCrewSidebarOpen(false);
+        setActiveCrewItemId(null);
         setCheckoutError(null);
     }, []);
 
@@ -229,18 +243,48 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     const switchToCartView = useCallback(() => setViewMode('CART'), []);
     const switchToTicketsView = useCallback(() => setViewMode('TICKETS'), []);
 
-    const toggleCrewMember = useCallback((employeeId: string) => {
-        setSelectedCrew(prev => {
-            if (prev.includes(employeeId)) {
-                return prev.filter(id => id !== employeeId);
+    // --- Per-Item Crew Functions ---
+    const toggleItemCrew = useCallback((itemId: string, employeeId: string) => {
+        setItemCrew(prev => {
+            const current = prev[itemId] || [];
+            if (current.includes(employeeId)) {
+                const updated = current.filter(id => id !== employeeId);
+                if (updated.length === 0) {
+                    const { [itemId]: _, ...rest } = prev;
+                    return rest;
+                }
+                return { ...prev, [itemId]: updated };
             } else {
-                return [...prev, employeeId];
+                return { ...prev, [itemId]: [...current, employeeId] };
             }
         });
     }, []);
 
-    const clearCrew = useCallback(() => {
-        setSelectedCrew([]);
+    const getItemCrew = useCallback((itemId: string): string[] => {
+        return itemCrew[itemId] || [];
+    }, [itemCrew]);
+
+    const getAllAssignedCrew = useCallback((): string[] => {
+        const allCrew = Object.values(itemCrew).flat();
+        return [...new Set(allCrew)]; // Unique crew IDs
+    }, [itemCrew]);
+
+    const clearItemCrew = useCallback((itemId: string) => {
+        setItemCrew(prev => {
+            const { [itemId]: _, ...rest } = prev;
+            return rest;
+        });
+    }, []);
+
+    // --- Crew Sidebar Control ---
+    const openCrewSidebar = useCallback((itemId?: string) => {
+        setIsCrewSidebarOpen(true);
+        setActiveCrewItemId(itemId || null);
+    }, []);
+
+    const closeCrewSidebar = useCallback(() => {
+        setIsCrewSidebarOpen(false);
+        setActiveCrewItemId(null);
     }, []);
 
     // --- API Helpers ---
@@ -307,14 +351,10 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
             setCurrentCustomer(null);
         }
 
-        // Set Crew
-        if (ticket.crew && Array.isArray(ticket.crew)) {
-            // Check if populated objects or IDs
-            const crewIds = ticket.crew.map((c: any) => typeof c === 'object' ? c._id : c);
-            setSelectedCrew(crewIds);
-        } else {
-            setSelectedCrew([]);
-        }
+        // Set Crew - For now clear, future: load per-item crew from ticket
+        setItemCrew({});
+        setIsCrewSidebarOpen(false);
+        setActiveCrewItemId(null);
 
         setViewMode('CART');
     }, [customers]);
@@ -325,7 +365,8 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
             productId: i._id,
             productName: i.name,
             quantity: i.quantity,
-            unitPrice: i.price
+            unitPrice: i.price,
+            crew: itemCrew[i._id] || []
         })),
         subtotal,
         tax,
@@ -336,8 +377,8 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         timestamp: new Date().toISOString(),
         name: nameOverride || currentTicketName,
         customer: currentCustomer?._id,
-        crew: selectedCrew
-    }), [cartItems, subtotal, tax, taxRate, total, currentTicketName, currentCustomer, selectedCrew]);
+        crew: getAllAssignedCrew()
+    }), [cartItems, subtotal, tax, taxRate, total, currentTicketName, currentCustomer, getAllAssignedCrew, itemCrew]);
 
     const saveTicket = useCallback(async (nameToSave: string) => {
         if (cartItems.length === 0 || isProcessing) return;
@@ -470,16 +511,23 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         setCustomer: setCurrentCustomer,
         currentCustomer,
         employees,
-        selectedCrew,
-        toggleCrewMember,
-        clearCrew
+        itemCrew,
+        toggleItemCrew,
+        getItemCrew,
+        getAllAssignedCrew,
+        clearItemCrew,
+        isCrewSidebarOpen,
+        activeCrewItemId,
+        openCrewSidebar,
+        closeCrewSidebar
     }), [
         cartItems, viewMode, openTickets, currentTicketId, currentTicketName,
         isProcessing, isTicketsLoading, checkoutError, subtotal, tax, total, taxRate, currency, formatCurrency,
         addItemToCart, updateItemQuantity, removeItem, clearCart, setCurrentTicketName,
         switchToCartView, switchToTicketsView,
         fetchOpenTickets, loadTicket, checkout, saveTicket, deleteTicket,
-        customers, currentCustomer, employees, selectedCrew, toggleCrewMember, clearCrew
+        customers, currentCustomer, employees, itemCrew, toggleItemCrew, getItemCrew, getAllAssignedCrew, clearItemCrew,
+        isCrewSidebarOpen, activeCrewItemId, openCrewSidebar, closeCrewSidebar
     ]);
 
     return contextValue;

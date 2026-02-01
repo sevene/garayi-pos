@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { TrashIcon, ArrowPathIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, ArrowPathIcon, FunnelIcon, ChevronDownIcon, ChevronUpIcon, BanknotesIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { useSettings } from '@/hooks/useSettings';
 import { toast } from 'sonner';
@@ -12,6 +12,8 @@ interface TicketItem {
     productName: string;
     quantity: number;
     unitPrice: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    crew?: any[];
 }
 
 interface Ticket {
@@ -125,10 +127,20 @@ export default function AdminOrdersPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'COMPLETED': return 'bg-green-100 text-green-800';
-            case 'CANCELLED': return 'bg-red-100 text-red-800';
-            default: return 'bg-yellow-100 text-yellow-800';
+            case 'COMPLETED': return 'bg-green-50 text-green-800';
+            case 'CANCELLED': return 'bg-red-50 text-red-800';
+            default: return 'bg-yellow-50 text-yellow-800';
         }
+    };
+
+    const getDuration = (start: string, end?: string) => {
+        if (!end) return null;
+        const diff = new Date(end).getTime() - new Date(start).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 0) return null; // Should not happen
+        if (mins < 60) return `${mins}m`;
+        const hrs = Math.floor(mins / 60);
+        return `${hrs}h ${mins % 60}m`;
     };
 
     // Filter Logic
@@ -161,7 +173,7 @@ export default function AdminOrdersPage() {
                 <button
                     onClick={fetchTickets}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors shadow-sm"
                 >
                     <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -198,6 +210,7 @@ export default function AdminOrdersPage() {
 
                 {/* Date Filter */}
                 <input
+                    id="dateFilter"
                     type="date"
                     value={dateFilter}
                     onChange={(e) => setDateFilter(e.target.value)}
@@ -272,12 +285,26 @@ export default function AdminOrdersPage() {
                                                     {formatDate(ticket.createdAt)}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(ticket.status || 'PENDING')}`}>
-                                                        {ticket.status || 'PENDING'}
-                                                    </span>
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(ticket.status || 'PENDING')}`}>
+                                                            {ticket.status || 'PENDING'}
+                                                        </span>
+                                                        {ticket.status === 'COMPLETED' && ticket.updatedAt && (
+                                                            <span className="text-[10px] text-gray-400 font-mono flex items-center gap-0.5" title="Service Duration">
+                                                                ⏱️ {getDuration(ticket.createdAt, ticket.updatedAt) || 'N/A'}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center text-sm font-medium text-gray-700">
-                                                    {ticket.paymentMethod || '-'}
+                                                <td className="px-6 py-4 text-center text-sm font-medium text-gray-700 align-middle">
+                                                    {ticket.paymentMethod === 'Cash' ? (
+                                                        <span className="inline-flex items-center justify-center gap-1.5 text-green-800 bg-green-50 px-2.5 py-1 border-green-50 rounded-md border text-xs font-semibold">
+                                                            <BanknotesIcon className="w-3.5 h-3.5" />
+                                                            Cash
+                                                        </span>
+                                                    ) : (
+                                                        ticket.paymentMethod || '-'
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="max-w-xs truncate">
@@ -328,12 +355,23 @@ export default function AdminOrdersPage() {
 
                                                                                 if (car) {
                                                                                     return (
-                                                                                        <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100 inline-block">
-                                                                                            <div className="text-xs font-bold text-gray-700">
-                                                                                                {car.makeModel || 'Unknown Model'} <span className="font-normal text-gray-500">• {car.color || 'No Color'}</span>
+                                                                                        <div className="mt-2 inline-flex items-center gap-2 p-1.5 pr-3 rounded-lg border border-gray-200 bg-white shadow-sm">
+                                                                                            {/* Color/Icon Swatch - Compact */}
+                                                                                            <div
+                                                                                                className="w-8 h-8 rounded border border-gray-200 flex items-center justify-center shrink-0 shadow-sm"
+                                                                                                style={{ backgroundColor: car.color?.toLowerCase() || '#f9fafb' }}
+                                                                                            >
+                                                                                                {!car.color && <span className="text-[10px] text-gray-400">🚗</span>}
                                                                                             </div>
-                                                                                            <div className="text-xs font-mono font-bold text-lime-700 bg-lime-50 border border-lime-200 rounded px-1.5 py-0.5 mt-1 inline-block">
-                                                                                                {car.plateNumber || 'NO PLATE'}
+
+                                                                                            {/* Details */}
+                                                                                            <div className="flex flex-col">
+                                                                                                <span className="font-bold text-gray-900 text-xs tracking-tight leading-tight">
+                                                                                                    {car.plateNumber || 'NO PLATE'}
+                                                                                                </span>
+                                                                                                <span className="text-[10px] text-gray-500 font-medium capitalize leading-tight">
+                                                                                                    {car.makeModel || 'Unknown'}
+                                                                                                </span>
                                                                                             </div>
                                                                                         </div>
                                                                                     );
@@ -349,7 +387,7 @@ export default function AdminOrdersPage() {
                                                                             <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Assigned Crew ({ticket.crew.length})</h5>
                                                                             <div className="flex flex-wrap gap-2">
                                                                                 {ticket.crew.map((c: any, i: number) => (
-                                                                                    <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lime-100 text-lime-800">
+                                                                                    <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
                                                                                         {typeof c === 'object' ? c.name : 'ID: ' + c}
                                                                                     </span>
                                                                                 ))}
@@ -364,6 +402,7 @@ export default function AdminOrdersPage() {
                                                                 <thead className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
                                                                     <tr>
                                                                         <th className="py-2 px-3 text-left">Product</th>
+                                                                        <th className="py-2 px-3 text-left">Assigned</th>
                                                                         <th className="py-2 px-3 text-center">Qty</th>
                                                                         <th className="py-2 px-3 text-right">Unit Price</th>
                                                                         <th className="py-2 px-3 text-right">Total</th>
@@ -372,10 +411,25 @@ export default function AdminOrdersPage() {
                                                                 <tbody className="divide-y divide-gray-100">
                                                                     {ticket.items.map((item, idx) => (
                                                                         <tr key={idx}>
-                                                                            <td className="py-2 px-3 text-gray-800">{item.productName}</td>
+                                                                            <td className="py-2 px-3 text-gray-800 font-medium">
+                                                                                {item.productName}
+                                                                            </td>
+                                                                            <td className="py-2 px-3">
+                                                                                {item.crew && item.crew.length > 0 ? (
+                                                                                    <div className="flex flex-wrap gap-1">
+                                                                                        {item.crew.map((c: any, i: number) => (
+                                                                                            <span key={i} className="text-[10px] bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded border border-sky-100 font-medium whitespace-nowrap">
+                                                                                                {c.name}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-xs text-gray-300 italic">-</span>
+                                                                                )}
+                                                                            </td>
                                                                             <td className="py-2 px-3 text-center text-gray-600">{item.quantity}</td>
                                                                             <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
-                                                                            <td className="py-2 px-3 text-right font-medium text-gray-800">
+                                                                            <td className="py-2 px-3 text-right font-medium text-gray-900">
                                                                                 {formatCurrency(item.unitPrice * item.quantity)}
                                                                             </td>
                                                                         </tr>
@@ -384,22 +438,28 @@ export default function AdminOrdersPage() {
                                                                 <tfoot className="border-t border-gray-200">
                                                                     {ticket.paymentMethod && (
                                                                         <tr>
-                                                                            <td colSpan={3} className="py-2 px-3 text-right font-bold text-gray-600">Payment Method</td>
+                                                                            <td colSpan={4} className="py-2 px-3 text-right font-bold text-gray-600">Payment Method</td>
                                                                             <td className="py-2 px-3 text-right font-bold text-lime-600">
-                                                                                {ticket.paymentMethod}
+                                                                                {ticket.paymentMethod === 'Cash' ? '💵 Cash' : ticket.paymentMethod}
                                                                             </td>
                                                                         </tr>
                                                                     )}
                                                                     <tr>
-                                                                        <td colSpan={3} className="py-2 px-3 text-right font-bold text-gray-600">Subtotal</td>
+                                                                        <td colSpan={4} className="py-2 px-3 text-right font-bold text-gray-600">Subtotal</td>
                                                                         <td className="py-2 px-3 text-right font-bold text-gray-800">
                                                                             {formatCurrency(ticket.subtotal ?? ticket.items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0))}
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
-                                                                        <td colSpan={3} className="py-1 px-3 text-right text-gray-500 text-xs">Tax ({Number((getTicketTaxRate(ticket) * 100).toFixed(2))}%)</td>
+                                                                        <td colSpan={4} className="py-1 px-3 text-right text-gray-500 text-xs">Tax ({Number((getTicketTaxRate(ticket) * 100).toFixed(2))}%)</td>
                                                                         <td className="py-1 px-3 text-right text-gray-500 text-xs">
                                                                             {formatCurrency(getTicketTaxAmount(ticket))}
+                                                                        </td>
+                                                                    </tr>
+                                                                    <tr className="border-t border-gray-100">
+                                                                        <td colSpan={4} className="py-3 px-3 text-right font-extrabold text-gray-900 text-base">Total</td>
+                                                                        <td className="py-3 px-3 text-right font-extrabold text-gray-900 text-base">
+                                                                            {formatCurrency(calculateTotal(ticket))}
                                                                         </td>
                                                                     </tr>
                                                                 </tfoot>

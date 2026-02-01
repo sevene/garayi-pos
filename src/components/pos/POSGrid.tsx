@@ -175,6 +175,9 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
         const price = isService ? (item as Service).servicePrice : (item as Product).price;
         const hasVariants = isService && (item as Service).variants && (item as Service).variants!.length > 0;
 
+        // Create unique key by prefixing with item type
+        const itemKey = isService ? `svc-${item._id}` : `prd-${item._id}`;
+
         let priceDisplay: React.ReactNode;
 
         if (hasVariants) {
@@ -194,7 +197,7 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
 
         return (
             <button
-                key={item._id}
+                key={itemKey}
                 onClick={() => handleItemClick(item)}
                 className="p-4 outline-none bg-gray-100 w-full h-[150px]
                 border border-transparent rounded-md
@@ -214,7 +217,7 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                 </div>
                 <div className="mt-2">
                     {hasVariants && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-sky-100 text-sky-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
                             {(item as Service).variants!.length} Variants
                         </span>
                     )}
@@ -231,17 +234,17 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
 
             {/* 1. PRODUCT GRID HEADER (Fixed Height, Non-Scrolling) */}
-            <div className={`px-6 py-[17.5px] shrink-0 flex flex-col z-10 transition-all duration-300 ease-in-out overflow-hidden`}>
+            <div className="px-6 py-4 shrink-0 flex flex-col z-10 transition-all duration-300 ease-in-out overflow-hidden border-b border-transparent">
 
                 {/* Category Filter Pills & Search */}
-                <div className="flex justify-between items-center">
-                    <div className="flex gap-1 overflow-x-auto scrollbar-hide py-1 px-1 bg-gray-50 font-base min-w-0 rounded-full">
+                <div className="flex justify-between items-center h-[52px]">
+                    <div className="flex gap-1 overflow-x-auto scrollbar-hide p-1.5 bg-gray-100 font-base min-w-0 rounded-full items-center">
                         <button
                             onClick={() => setSelectedCategory('all')}
-                            className={`px-3 py-0.5 rounded-full text-sm transition whitespace-nowrap shrink-0
+                            className={`px-4 py-1.5 rounded-full text-sm transition whitespace-nowrap shrink-0
                                 ${selectedCategory === 'all'
-                                    ? 'bg-white text-lime-600 font-medium'
-                                    : 'bg-gray-50 text-gray-600 hover:bg-white'}`}
+                                    ? 'bg-white text-gray-900 font-medium shadow-sm'
+                                    : 'bg-transparent text-gray-500 hover:bg-white/50 hover:text-gray-700'}`}
                         >
                             All ({allItems.length})
                         </button>
@@ -249,10 +252,10 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                             <button
                                 key={cat._id}
                                 onClick={() => setSelectedCategory(cat._id)}
-                                className={`px-3 py-0.5 rounded-full text-sm transition whitespace-nowrap shrink-0 capitalize
+                                className={`px-4 py-1.5 rounded-full text-sm transition whitespace-nowrap shrink-0 capitalize
                                     ${selectedCategory === cat._id
-                                        ? 'bg-white text-lime-600 font-medium'
-                                        : 'bg-gray-50 text-gray-600 hover:bg-white'
+                                        ? 'bg-white text-gray-900 font-medium shadow-sm'
+                                        : 'bg-transparent text-gray-500 hover:bg-white/50 hover:text-gray-700'
                                     }
                                 `}
                             >
@@ -262,24 +265,18 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                     </div>
 
                     {/* Search Input */}
-                    <div className="relative w-64 shrink-0 ml-4">
-                        <MagnifyingGlassIcon className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <div className="relative w-72 shrink-0 ml-4 group">
+                        <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                         <input
                             name="search"
                             type="search"
-                            placeholder="Search products/services..."
+                            placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className={`pl-6 pr-4 py-1.5 w-full
-                                       border-b border-gray-100 text-sm
-                                       text-gray-500 placeholder-gray-300
-                                       focus:outline-none
-                                       focus:border-lime-500
-                                       hover:border-gray-300
-                                       transition duration-300 ease-in-out
-                                       ${searchTerm ? 'bg-lime-50' : 'bg-transparent'}
-                                       [&:-webkit-autofill]:shadow-[inset_0_0_0px_1000px_#f7fee7]
-                                       `}
+                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 border border-transparent rounded-full
+                                       text-gray-700 placeholder-gray-400
+                                       focus:bg-white focus:border-gray-200 focus:ring-2 focus:ring-gray-100 focus:outline-none
+                                       transition-all duration-200 ease-in-out shadow-sm hover:bg-gray-100/80"
                         />
                     </div>
                 </div>
