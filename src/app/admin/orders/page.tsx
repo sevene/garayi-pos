@@ -16,6 +16,7 @@ interface TicketItem {
 
 interface Ticket {
     _id: string;
+    ticketNumber?: string; // Formatted ticket ID (e.g., GCW-2602011853001)
     name: string;
     status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
     items: TicketItem[];
@@ -264,7 +265,7 @@ export default function AdminOrdersPage() {
                                                         <div className="text-xs text-gray-500 font-medium">
                                                             {ticket.customer ? (typeof ticket.customer === 'object' ? ticket.customer.name : 'Unknown Customer') : 'No Customer'}
                                                         </div>
-                                                        <div className="text-xs text-gray-400 mt-0.5">{ticket._id}</div>
+                                                        <div className="text-xs text-gray-400 mt-0.5 font-mono">{ticket.ticketNumber || ticket._id}</div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">

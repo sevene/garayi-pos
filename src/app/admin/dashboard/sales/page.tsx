@@ -303,7 +303,7 @@ export default function SalesPage() {
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-800">
                                             {ticket.name || 'Walk-in'}
-                                            <div className="text-xs text-gray-400 font-normal">{ticket._id.substring(ticket._id.length - 6)}</div>
+                                            <div className="text-xs text-gray-400 font-mono font-normal">{ticket.ticketNumber || ticket._id}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-900 font-medium">
                                             {ticket.customer?.name || 'Guest'}
