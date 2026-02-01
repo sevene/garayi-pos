@@ -1,5 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest, NextResponse } from 'next/server';
+import { generateTicketNumber, getCurrentMinutePrefix } from '@/lib/ticketNumber';
 
 export async function GET() {
     try {
@@ -81,6 +82,9 @@ export async function GET() {
             ticket.taxRate = ticket.tax_rate ?? 0;
             ticket.taxAmount = ticket.tax_amount ?? 0;
 
+            // Map ticket number
+            ticket.ticketNumber = ticket.ticket_number;
+
             if (!ticket.name) {
                 ticket.name = `Order #${ticket.id}`;
             }
@@ -133,10 +137,20 @@ export async function POST(req: NextRequest) {
         const taxAmount = body.tax ?? (subtotal * taxRate);
         const total = body.total || (subtotal + taxAmount);
 
+        // Generate unique ticket number
+        // Query existing tickets in the same minute to determine sequence
+        const minutePrefix = getCurrentMinutePrefix();
+        const existingRes = await db.prepare(
+            `SELECT COUNT(*) as count FROM tickets WHERE ticket_number LIKE ?`
+        ).bind(`${minutePrefix}%`).first() as { count: number } | null;
+        const existingCount = existingRes?.count ?? 0;
+        const ticketNumber = generateTicketNumber(existingCount);
+
         const res = await db.prepare(`
-            INSERT INTO tickets (created_at, subtotal, tax_rate, tax_amount, total, status, customer_id, plate_number, name, payment_method, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+            INSERT INTO tickets (ticket_number, created_at, subtotal, tax_rate, tax_amount, total, status, customer_id, plate_number, name, payment_method, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
         `).bind(
+            ticketNumber,
             new Date().toISOString(),
             subtotal,
             taxRate,
@@ -196,6 +210,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             _id: String(ticketId),
+            ticketNumber,
             name: body.name || `Order #${ticketId}`,
             completedAt,
             paymentMethod: body.paymentMethod

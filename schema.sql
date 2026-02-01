@@ -157,6 +157,7 @@ CREATE TABLE IF NOT EXISTS customer_vehicles (
 -- Create Tickets (Job Orders)
 CREATE TABLE IF NOT EXISTS tickets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_number TEXT UNIQUE, -- Formatted ticket ID (e.g., GCW-2602011853001)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   completed_at DATETIME, -- Renamed from finished_at to match API
   subtotal REAL DEFAULT 0, -- Sum of item prices before tax

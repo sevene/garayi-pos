@@ -62,9 +62,16 @@ const TicketsListView = () => {
                             className="group p-3 border border-gray-100 rounded-lg cursor-pointer bg-white transition-all hover:border-gray-300"
                         >
                             <div className="flex justify-between items-start mb-1">
-                                <span className="font-bold text-gray-800 group-hover:text-lime-600 transition-colors">
-                                    {ticket.name || 'Unnamed Ticket'}
-                                </span>
+                                <div className="flex flex-col">
+                                    {ticket.ticketNumber && (
+                                        <span className="text-[10px] font-mono text-gray-400 tracking-wide">
+                                            {ticket.ticketNumber}
+                                        </span>
+                                    )}
+                                    <span className="font-bold text-gray-800 group-hover:text-lime-600 transition-colors">
+                                        {ticket.name || 'Unnamed Ticket'}
+                                    </span>
+                                </div>
                                 <span className="font-bold text-lime-600">
                                     {formatCurrency(displayTotal)}
                                 </span>
