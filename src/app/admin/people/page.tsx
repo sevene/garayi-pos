@@ -181,7 +181,7 @@ export default function AdminEmployeesPage() {
 
     // Helper to get role display name by ID (or fallback to the stored value if not found)
     const getRoleDisplayName = (roleId: string) => {
-        const role = roles.find(r => r._id === roleId);
+        const role = roles.find(r => r._id === String(roleId));
         return role?.displayName || role?.name || roleId;
     };
 

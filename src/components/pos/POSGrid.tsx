@@ -311,7 +311,7 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                 >
                     {sectionsToRender.map(section => (
                         <div key={section.id} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
                                 {section.items.map(item => renderItemCard(item))}
                             </div>
                         </div>

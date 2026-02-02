@@ -34,20 +34,21 @@ function POSLayout({ initialServices, initialProducts, initialCategories }: {
             {/* Main Content Area: Products + Cart. Uses flex-1 to fill horizontal space. */}
             <div className="flex flex-1 overflow-hidden shrink-0 relative">
                 {/* Product/Service Area (Grid, fills remaining width) */}
-                <div className={`flex-1 overflow-hidden h-full bg-white flex flex-col scrollbar-hide transition-all duration-300 ${isCrewSidebarOpen ? 'opacity-50 pointer-events-none' : ''
+                <div className={`flex-1 overflow-hidden h-full bg-white flex flex-col scrollbar-hide transition-all duration-300 relative ${isCrewSidebarOpen ? 'opacity-50 pointer-events-none' : ''
                     }`}>
                     {/* POSGrid reads products and uses the cart context to add items */}
                     <POSGrid initialServices={initialServices} initialProducts={initialProducts} initialCategories={initialCategories} />
+
+                    {/* Dimming Overlay - Clicking it closes the crew sidebar */}
+                    {isCrewSidebarOpen && (
+                        <div
+                            className="absolute inset-0 bg-black/20 z-10 transition-opacity duration-300"
+                            onClick={closeCrewSidebar}
+                        />
+                    )}
                 </div>
 
-                {/* Dimming Overlay - Clicking it closes the crew sidebar */}
-                {isCrewSidebarOpen && (
-                    <div
-                        className="absolute inset-0 bg-black/20 z-10 transition-opacity duration-300"
-                        style={{ right: 'auto', width: 'calc(100% - 700px)' }}
-                        onClick={closeCrewSidebar}
-                    />
-                )}
+
 
                 {/* Cart & Checkout Panel (Fixed Width) */}
                 {/* CartPanel reads cart state and displays totals */}

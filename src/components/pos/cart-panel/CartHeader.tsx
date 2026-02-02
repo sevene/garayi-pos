@@ -100,15 +100,15 @@ const CartHeader: React.FC<CartHeaderProps> = ({ ticketNameInput, setTicketNameI
                 {hasServices && (
                     <button
                         onClick={() => openCrewSidebar()}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg transition-all outline-none group ${isCrewSidebarOpen
-                            ? 'bg-white ring-2 ring-green-500 shadow-sm'
-                            : 'bg-gray-50 hover:bg-gray-100'
+                        className={`w-full flex items-center justify-between p-3 rounded-lg transition-all outline-none group border ${isCrewSidebarOpen
+                            ? 'bg-white border-gray-400'
+                            : 'bg-gray-50 border-transparent hover:bg-gray-100'
                             }`}
                     >
                         <div className="flex items-center gap-3">
                             {/* Crew Avatar */}
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors ${allCrewIds.length > 0
-                                ? 'bg-green-600 text-white'
+                                ? 'bg-lime-600 text-white'
                                 : 'bg-gray-200 text-gray-500'
                                 }`}>
                                 {allCrewIds.length > 0 ? (
@@ -130,7 +130,7 @@ const CartHeader: React.FC<CartHeaderProps> = ({ ticketNameInput, setTicketNameI
                         </div>
 
                         {/* Chevron */}
-                        <ChevronRightIcon className={`w-4 h-4 transition-transform ${isCrewSidebarOpen ? 'text-green-600 rotate-90' : 'text-gray-400 group-hover:text-gray-600'
+                        <ChevronRightIcon className={`w-4 h-4 transition-transform ${isCrewSidebarOpen ? 'text-gray-900 rotate-90' : 'text-gray-400 group-hover:text-gray-600'
                             }`} />
                     </button>
                 )}

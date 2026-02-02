@@ -74,8 +74,7 @@ export function CartPanel() {
     return (
         <div className="flex h-full">
             {/* Main Cart Panel */}
-            <div className={`bg-white flex flex-col h-full border-l border-gray-200 relative transition-all duration-300 ${isCrewSidebarOpen ? 'w-[350px]' : 'w-[450px]'
-                }`}>
+            <div className={`bg-white flex flex-col h-full border-l border-gray-200 relative transition-all duration-300 w-[450px]`}>
                 <PaymentModal
                     isOpen={isPaymentModalOpen}
                     onClose={() => setIsPaymentModalOpen(false)}
@@ -98,7 +97,7 @@ export function CartPanel() {
             </div>
 
             {/* Crew Sidebar - slides in from right */}
-            <div className={`bg-white border-l border-gray-200 h-full overflow-hidden transition-all duration-300 ${isCrewSidebarOpen ? 'w-[350px]' : 'w-0'
+            <div className={`bg-white border-l border-gray-200 h-full overflow-hidden transition-all duration-300 ${isCrewSidebarOpen ? 'w-[450px]' : 'w-0'
                 }`}>
                 {isCrewSidebarOpen && <CrewSidebar />}
             </div>

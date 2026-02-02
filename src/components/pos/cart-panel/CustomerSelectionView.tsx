@@ -44,7 +44,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <div className="p-4">
                 <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
@@ -54,7 +54,7 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                         placeholder="Search by name or mobile..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-lime-500 outline-none text-gray-700 bg-white shadow-sm transition-all"
+                        className="w-full pl-10 pr-4 py-1 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-lime-500 outline-none text-gray-700 bg-white transition-all"
                         autoFocus
                     />
                 </div>
@@ -64,9 +64,9 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
             <div className="flex-1 overflow-y-auto min-h-0">
                 {/* Active Customer Section (Top Pinned) */}
                 {currentCustomer && (
-                    <div className="p-4 border-b border-lime-100 bg-lime-50/50">
-                        <h3 className="text-xs font-bold text-lime-700 uppercase tracking-wider mb-2">Currently Assigned</h3>
-                        <div className="bg-white p-3 rounded-xl border border-lime-200 shadow-sm flex justify-between items-center">
+                    <div className="p-4 border-b border-gray-200">
+                        <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Currently Assigned</h3>
+                        <div className="bg-white p-3 rounded-xl border border-gray-400 flex justify-between items-center">
                             <div>
                                 <p className="font-bold text-gray-900">{currentCustomer.name}</p>
                                 <p className="text-xs text-gray-500">{currentCustomer.contactInfo || 'No contact info'}</p>
@@ -124,9 +124,9 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
 
                                                     setCurrentTicketName(newTicketName);
                                                 }}
-                                                className={`w-full flex items-center justify-between p-2 rounded-lg border text-sm transition-all ${isSelected
-                                                    ? 'bg-lime-50 border-lime-500 text-lime-900'
-                                                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                                className={`w-full flex items-center justify-between p-2 text-sm transition-all ${isSelected
+                                                    ? 'text-gray-700'
+                                                    : 'text-gray-500'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -163,8 +163,8 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                                     // onBack();
                                 }}
                                 className={`w-full flex items-center p-3 rounded-xl transition-colors text-left group ${currentCustomer?._id === cust._id
-                                    ? 'bg-lime-50 border border-lime-200'
-                                    : 'hover:bg-gray-50 border border-transparent'
+                                    ? 'bg-lime-50'
+                                    : 'hover:bg-gray-50'
                                     }`}
                             >
                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold mr-3 group-hover:bg-white group-hover:shadow-sm transition-all">
@@ -175,10 +175,10 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                                         <span className={`font-semibold ${currentCustomer?._id === cust._id ? 'text-lime-800' : 'text-gray-800'}`}>
                                             {cust.name}
                                         </span>
-                                        {currentCustomer?._id === cust._id && <CheckCircleIcon className="w-5 h-5 text-lime-600" />}
                                     </div>
                                     <p className="text-xs text-gray-500 truncate">{cust.contactInfo || 'No contact info'}</p>
                                 </div>
+                                {currentCustomer?._id === cust._id && <CheckCircleIcon className="w-5 h-5 text-lime-600 ml-2" />}
                             </button>
                         ))}
 

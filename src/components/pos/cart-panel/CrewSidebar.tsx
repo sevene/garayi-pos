@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
 import {
     XMarkIcon,
@@ -27,6 +27,34 @@ const CrewSidebar = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(activeCrewItemId);
+    const [roles, setRoles] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const res = await fetch('/api/roles');
+                if (res.ok) {
+                    const data = await res.json();
+                    setRoles(data as any[]);
+                }
+            } catch (err) {
+                console.error("Failed to fetch roles", err);
+            }
+        };
+        fetchRoles();
+    }, []);
+
+    const getRoleName = (roleIdOrName: string) => {
+        if (!roleIdOrName) return 'Staff';
+        // Try to find by ID first
+        const role = roles.find(r => r._id === String(roleIdOrName));
+        if (role) return role.displayName || role.name;
+
+        // Fallback: If role data hasn't loaded or linking failed, return the value if it looks like a name (not a number)
+        if (isNaN(Number(roleIdOrName))) return roleIdOrName; // e.g. "admin"
+
+        return 'Staff'; // Fallback for unmatched IDs
+    };
 
     // Filter to only show service items (services have sku === 'SRV')
     const serviceItems = useMemo(() => {
@@ -36,7 +64,7 @@ const CrewSidebar = () => {
     // Filter employees by search
     const filteredEmployees = useMemo(() => {
         const crewList = employees.filter((emp: any) =>
-            emp.role !== 'admin' || employees.length <= 1
+            emp.role !== 'admin' && emp.role !== '1' || employees.length <= 1
         );
 
         if (!searchTerm) return crewList;
@@ -52,10 +80,10 @@ const CrewSidebar = () => {
     return (
         <div className="flex flex-col h-full bg-white animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-lime-50">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
                 <div className="flex items-center gap-2">
-                    <UserGroupIcon className="w-5 h-5 text-lime-600" />
-                    <h2 className="text-lg font-bold text-gray-800">Assign Crew</h2>
+                    <UserGroupIcon className="w-5 h-5 text-gray-900" />
+                    <h2 className="text-lg font-bold text-gray-900">Assign Crew</h2>
                 </div>
                 <button
                     onClick={closeCrewSidebar}
@@ -66,7 +94,7 @@ const CrewSidebar = () => {
             </div>
 
             {/* Service Items Selection */}
-            <div className="p-3 border-b border-gray-100 bg-gray-50">
+            <div className="p-3 border-b border-gray-100 bg-gray-50/50">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Select Service</p>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
                     {serviceItems.length === 0 ? (
@@ -79,19 +107,19 @@ const CrewSidebar = () => {
                                 <button
                                     key={item._id}
                                     onClick={() => setSelectedItemId(item._id)}
-                                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all ${isSelected
-                                        ? 'bg-green-50 border border-green-200'
-                                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all border ${isSelected
+                                        ? 'bg-white border-gray-400'
+                                        : 'bg-white border-gray-200 hover:border-gray-300'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <WrenchScrewdriverIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-green-600' : 'text-gray-400'}`} />
-                                        <span className={`text-sm font-medium truncate ${isSelected ? 'text-green-800' : 'text-gray-700'}`}>
+                                        <WrenchScrewdriverIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-gray-900' : 'text-gray-400'}`} />
+                                        <span className={`text-sm font-medium truncate ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
                                             {item.name}
                                         </span>
                                     </div>
                                     {crewCount > 0 && (
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isSelected ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isSelected ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {crewCount}
                                         </span>
@@ -142,26 +170,26 @@ const CrewSidebar = () => {
                                         key={emp._id}
                                         onClick={() => toggleItemCrew(selectedItemId, emp._id)}
                                         className={`w-full flex items-center p-3 rounded-xl transition-all text-left ${isAssigned
-                                            ? 'bg-green-50 border border-green-200'
+                                            ? 'bg-lime-50 border border-lime-100'
                                             : 'hover:bg-gray-50 border border-transparent'
                                             }`}
                                     >
                                         <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm mr-3 transition-all ${isAssigned
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-gray-200 text-gray-500'
+                                            ? 'bg-lime-600 text-white'
+                                            : 'bg-gray-100 text-gray-400'
                                             }`}>
                                             {emp.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-center">
-                                                <span className={`font-semibold text-sm ${isAssigned ? 'text-green-800' : 'text-gray-800'
+                                                <span className={`font-semibold text-sm ${isAssigned ? 'text-gray-900' : 'text-gray-700'
                                                     }`}>
                                                     {emp.name}
                                                 </span>
-                                                {isAssigned && <CheckCircleIcon className="w-5 h-5 text-green-600" />}
                                             </div>
-                                            <p className="text-xs text-gray-400 capitalize">{emp.role || 'Staff'}</p>
+                                            <p className="text-xs text-gray-400 capitalize">{getRoleName(emp.role)}</p>
                                         </div>
+                                        {isAssigned && <CheckCircleIcon className="w-5 h-5 text-lime-600 ml-2" />}
                                     </button>
                                 );
                             })
@@ -182,7 +210,7 @@ const CrewSidebar = () => {
                         </div>
                         <button
                             onClick={closeCrewSidebar}
-                            className="px-4 py-2 bg-lime-600 text-white text-sm font-bold rounded-lg hover:bg-lime-700 transition-colors shadow-sm shadow-lime-200"
+                            className="px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg hover:bg-black transition-all shadow-sm"
                         >
                             Done
                         </button>
