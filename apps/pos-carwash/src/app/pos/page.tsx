@@ -9,6 +9,7 @@ export default async function POSPage() {
     let categories: any[] = [];
     let customers: any[] = [];
     let employees: any[] = [];
+    let inventoryMap: Record<string, number> = {};
 
     try {
         const { env } = await getCloudflareContext({ async: true });
@@ -42,6 +43,7 @@ export default async function POSPage() {
         // Fetch all variants for visible services
         const serviceIds = servicesRes.results.map((s: any) => s.id);
         let allVariants: any[] = [];
+        let allVariantIngredients: any[] = [];
 
         if (serviceIds.length > 0) {
             const variantsRes = await db.prepare(`
@@ -49,32 +51,91 @@ export default async function POSPage() {
                 WHERE service_id IN (${serviceIds.map(() => '?').join(',')})
             `).bind(...serviceIds).all();
             allVariants = variantsRes.results;
+
+            // Fetch ingredients for these variants
+            if (allVariants.length > 0) {
+                const variantIds = allVariants.map(v => v.id);
+                // We join products to get the name for display purposes (tooltip)
+                const varIngredientsRes = await db.prepare(`
+                    SELECT svi.*, p.name as product_name
+                    FROM service_variant_ingredients svi
+                    LEFT JOIN products p ON svi.product_id = p.id
+                    WHERE svi.variant_id IN (${variantIds.map(() => '?').join(',')})
+                `).bind(...variantIds).all();
+                allVariantIngredients = varIngredientsRes.results;
+            }
         }
 
         services = servicesRes.results.map((s: any) => {
             // Get variants for this service
             const serviceVariants = allVariants
                 .filter((v: any) => v.service_id === s.id)
-                .map((v: any) => ({
-                    id: v.id,
-                    name: v.name,
-                    price: v.price || 0
-                }));
+                .map((v: any) => {
+                    // Get ingredients for this variant
+                    const ingredients = allVariantIngredients
+                        .filter((vi: any) => vi.variant_id === v.id)
+                        .map((vi: any) => ({
+                            productId: String(vi.product_id),
+                            productName: vi.product_name || 'Unknown Ingredient',
+                            quantity: vi.quantity || 1,
+                            unitCost: 0 // Not strictly needed for availability check
+                        }));
+
+                    return {
+                        id: v.id,
+                        name: v.name,
+                        price: v.price || 0,
+                        products: ingredients
+                    };
+                });
 
             return {
                 _id: String(s.id),
                 name: s.name,
                 description: s.description,
-                category: s.category_name || 'Uncategorized',
+                category: s.category_id ? String(s.category_id) : undefined,
                 servicePrice: s.servicePrice || 0,
                 laborCost: s.laborCost || 0,
                 laborCostType: s.laborCostType || 'fixed',
                 durationMinutes: s.durationMinutes || 0,
                 showInPOS: true,
                 image: s.image_url || '',
-                variants: serviceVariants
+                variants: serviceVariants,
+                // We must also fetch base service ingredients if they exist (table service_ingredients)
+                // The current code didn't seem to fetch BASE ingredients for the service itself?
+                // Wait, looking at lines 36-41 in original file, it selects from `services`.
+                // It does NOT seem to fetch `service_ingredients`.
+                // The user's prompt implies "service Basic Wash... rely on the product".
+                // If it's a base service ingredient, we need that too.
+                products: [] // Placeholder, we need to fetch base ingredients too!
             };
         });
+
+        // 2a. Fetch Base Service Ingredients (CRITICAL MISSING PIECE)
+        // If the service ITSELF has ingredients (not just variants)
+        let allServiceIngredients: any[] = [];
+        if (serviceIds.length > 0) {
+            const svcIngredientsRes = await db.prepare(`
+                SELECT si.*, p.name as product_name
+                FROM service_ingredients si
+                LEFT JOIN products p ON si.product_id = p.id
+                WHERE si.service_id IN (${serviceIds.map(() => '?').join(',')})
+            `).bind(...serviceIds).all();
+            allServiceIngredients = svcIngredientsRes.results;
+        }
+
+        // Re-map services to include base products
+        services = services.map(s => ({
+            ...s,
+            products: allServiceIngredients
+                .filter((si: any) => String(si.service_id) === s._id)
+                .map((si: any) => ({
+                    productId: String(si.product_id),
+                    productName: si.product_name || 'Unknown Ingredient',
+                    quantity: si.quantity || 1,
+                    unitCost: 0
+                }))
+        }));
 
         // 3. Fetch Products (filtered by show_in_pos = 1)
         const productsRes = await db.prepare(`
@@ -89,7 +150,7 @@ export default async function POSPage() {
             name: p.name,
             sku: p.sku,
             price: p.price || 0,
-            category: p.category_name || p.category || 'Uncategorized',
+            category: p.category ? String(p.category) : undefined,
             stock: p.stock_quantity || 0,
             showInPOS: true,
             image: p.image_url || ''
@@ -174,6 +235,15 @@ export default async function POSPage() {
             role: e.role
         }));
 
+
+        // 6. Fetch ALL Inventory (for stock tracking)
+        // We select all products regardless of show_in_pos status to get comprehensive stock levels
+        const inventoryRes = await db.prepare('SELECT id, stock_quantity FROM products').all();
+        // Use the outer scope variable, do not redeclare
+        inventoryRes.results.forEach((item: any) => {
+            inventoryMap[String(item.id)] = item.stock_quantity ?? 0;
+        });
+
     } catch (e) {
         console.error("Failed to load POS data", e);
     }
@@ -186,6 +256,7 @@ export default async function POSPage() {
                 initialCategories={categories}
                 initialCustomers={customers}
                 initialEmployees={employees}
+                initialInventory={inventoryMap}
             />
         </div>
     );

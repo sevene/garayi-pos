@@ -21,6 +21,7 @@ export interface Product {
   image?: string; // Optional image URL
   category?: string; // Optional category
   stock?: number; // Optional stock quantity
+  threshold?: number; // Low stock threshold
   showInPOS?: boolean; // Optional flag to show in POS
   soldBy?: 'piece' | 'weight/volume'; // Unit type
 }

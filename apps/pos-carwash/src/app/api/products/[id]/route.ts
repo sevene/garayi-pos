@@ -35,16 +35,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const db = await getDB();
         const body = await req.json() as any;
 
-        console.log("Updating Product - Body:", JSON.stringify(body, null, 2));
-
         // Check if we are doing a partial update (e.g. toggle POS) or full update
-        // If 'name' is missing, it's likely a partial update.
-        // However, a robust way involves checking keys.
-
         const updates: string[] = [];
         const values: any[] = [];
 
-        const { name, sku, category, price, volume, soldBy, cost, stock, showInPOS, image } = body;
+        let stockChange: { new: number, reason?: string } | null = null;
+
+        const { name, sku, category, price, volume, soldBy, cost, stock, threshold, showInPOS, image, reason } = body;
 
         if (name !== undefined) { updates.push('name = ?'); values.push(name); }
         if (sku !== undefined) { updates.push('sku = ?'); values.push(sku); }
@@ -59,7 +56,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (volume !== undefined) { updates.push('volume = ?'); values.push(volume); }
         if (soldBy !== undefined) { updates.push('unit_type = ?'); values.push(soldBy); }
         if (cost !== undefined) { updates.push('cost = ?'); values.push(cost); }
-        if (stock !== undefined) { updates.push('stock_quantity = ?'); values.push(stock); }
+
+        if (stock !== undefined) {
+            updates.push('stock_quantity = ?');
+            values.push(stock);
+            stockChange = { new: stock, reason };
+        }
+
+        if (threshold !== undefined) {
+            updates.push('low_stock_threshold = ?');
+            values.push(threshold);
+        }
 
         if (showInPOS !== undefined) {
             updates.push('show_in_pos = ?');
@@ -70,8 +77,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         if (updates.length > 0) {
             values.push(id); // For WHERE clause
+
+            // If stock is changing, we should log it
+            if (stockChange) {
+                // Fetch current stock first
+                const currentProd = await db.prepare('SELECT stock_quantity FROM products WHERE id = ?').bind(id).first();
+                const oldStock = currentProd ? (currentProd.stock_quantity as number) : 0;
+                const changeAmount = stockChange.new - oldStock;
+
+                await db.prepare(`
+                    INSERT INTO inventory_logs (product_id, previous_stock, new_stock, change_amount, reason)
+                    VALUES (?, ?, ?, ?, ?)
+                `).bind(id, oldStock, stockChange.new, changeAmount, stockChange.reason || 'Manual Update').run();
+            }
+
             const query = `UPDATE products SET ${updates.join(', ')} WHERE id = ?`;
-            console.log("Partial Update Query:", query);
             await db.prepare(query).bind(...values).run();
         }
 

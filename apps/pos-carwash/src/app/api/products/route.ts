@@ -14,13 +14,17 @@ export async function GET() {
         const normalizedResults = results.map((p: any) => ({
             ...p,
             _id: String(p.id),
-            id: String(p.id), // Explicitly cast generic ID
+            // Explicitly cast generic ID
+            id: String(p.id),
             // Generic price
             price: p.price,
             // Prefer the joined category name, fallback to the raw value
             category: p.category_name || p.category,
             // Map integer to boolean
-            showInPOS: Boolean(p.show_in_pos)
+            showInPOS: Boolean(p.show_in_pos),
+            // Map DB stock_quantity to Frontend stock
+            stock: p.stock_quantity ?? 0,
+            threshold: p.low_stock_threshold ?? 10
         }));
 
         if (normalizedResults.length === 0) {
@@ -68,19 +72,20 @@ export async function POST(req: Request) {
             soldBy: string;
             cost: number;
             stock: number;
+            threshold?: number;
             showInPOS: boolean;
             image: string;
         };
 
         console.log("Creating Product - Payload:", JSON.stringify(body, null, 2));
-        const { name, sku, category, price, volume, soldBy, cost, stock, showInPOS, image } = body;
+        const { name, sku, category, price, volume, soldBy, cost, stock, threshold, showInPOS, image } = body;
 
         const numericPrice = parseFloat(String(price));
 
         // Insert into proper products table with clean schema
         const result = await db.prepare(`
-            INSERT INTO products (name, sku, category, price, volume, unit_type, cost, stock_quantity, show_in_pos, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO products (name, sku, category, price, volume, unit_type, cost, stock_quantity, low_stock_threshold, show_in_pos, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
             name,
             sku,
@@ -90,6 +95,7 @@ export async function POST(req: Request) {
             soldBy,
             cost,
             stock,
+            threshold ?? 10,
             showInPOS ? 1 : 0,
             image
         ).run();

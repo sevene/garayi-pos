@@ -29,6 +29,7 @@ export default function InventoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [stockUpdates, setStockUpdates] = useState<{ [key: string]: number | string }>({});
+    const [thresholdUpdates, setThresholdUpdates] = useState<{ [key: string]: number | string }>({});
     const [adjustmentReasons, setAdjustmentReasons] = useState<{ [key: string]: string }>({});
     const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
     const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
@@ -39,7 +40,7 @@ export default function InventoryPage() {
 
             const res = await fetch('/api/products');
             if (res.ok) {
-                const data = await res.json();
+                const data = await res.json() as Product[];
                 setProducts(data);
             }
         } catch (error) {
@@ -69,6 +70,21 @@ export default function InventoryPage() {
         }
     };
 
+    const handleThresholdChange = (id: string, value: string) => {
+        if (value.length > 1 && value.startsWith('0')) {
+            value = value.replace(/^0+/, '');
+        }
+
+        if (value === '') {
+            setThresholdUpdates(prev => ({ ...prev, [id]: '' }));
+        } else {
+            const numValue = parseInt(value);
+            if (!isNaN(numValue) && numValue >= 0) {
+                setThresholdUpdates(prev => ({ ...prev, [id]: numValue }));
+            }
+        }
+    };
+
     const handleReasonChange = (id: string, reason: string) => {
         setAdjustmentReasons(prev => ({ ...prev, [id]: reason }));
         setValidationErrors(prev => {
@@ -80,6 +96,11 @@ export default function InventoryPage() {
 
     const handleCancel = (id: string) => {
         setStockUpdates(prev => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        });
+        setThresholdUpdates(prev => {
             const next = { ...prev };
             delete next[id];
             return next;
@@ -96,54 +117,70 @@ export default function InventoryPage() {
         });
     };
 
-    const handleUpdateStock = async (product: Product) => {
-        let val = stockUpdates[product._id];
-        // Treat empty string as 0 for saving
-        if (val === '') val = 0;
+    const handleSaveChanges = async (product: Product) => {
+        let stockVal = stockUpdates[product._id];
+        let thresholdVal = thresholdUpdates[product._id];
 
-        const newStock = val as number;
-        const reason = adjustmentReasons[product._id];
+        // Treat empty strings as 0 (or keep original? logic implies explicit change)
+        // If undefined, it wasn't changed.
 
-        if (!reason) {
-            setValidationErrors(prev => new Set(prev).add(product._id));
-            toast.error("Please select an adjustment reason.");
+        const updates: any = {};
+        let stockChanged = false;
+
+        if (stockVal !== undefined) {
+            if (stockVal === '') stockVal = 0;
+            if (stockVal !== product.stock) {
+                updates.stock = stockVal;
+                stockChanged = true;
+            }
+        }
+
+        if (thresholdVal !== undefined) {
+            if (thresholdVal === '') thresholdVal = 0;
+            if (thresholdVal !== product.threshold) {
+                updates.threshold = thresholdVal;
+            }
+        }
+
+        if (Object.keys(updates).length === 0) {
+            handleCancel(product._id);
             return;
         }
 
-        if (newStock === undefined || newStock === product.stock) return;
+        // Only require reason if STOCK changed
+        const reason = adjustmentReasons[product._id];
+        if (stockChanged && !reason) {
+            setValidationErrors(prev => new Set(prev).add(product._id));
+            toast.error("Please select an adjustment reason for stock change.");
+            return;
+        }
+
+        if (stockChanged) {
+            updates.reason = reason;
+        }
 
         setUpdatingIds(prev => new Set(prev).add(product._id));
 
         try {
-            const response = await fetch(`/api/inventories/product/${product._id}`, {
+            const response = await fetch(`/api/products/${product._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stock: newStock, reason }),
+                body: JSON.stringify(updates),
             });
 
-            if (!response.ok) throw new Error('Failed to update stock');
+            if (!response.ok) throw new Error('Failed to update product');
 
             // Update local state
             setProducts(prev => prev.map(p =>
-                p._id === product._id ? { ...p, stock: newStock } : p
+                p._id === product._id ? { ...p, ...updates, stock: updates.stock ?? p.stock, threshold: updates.threshold ?? p.threshold } : p
             ));
 
-            // Clear pending update
-            setStockUpdates(prev => {
-                const next = { ...prev };
-                delete next[product._id];
-                return next;
-            });
-            setAdjustmentReasons(prev => {
-                const next = { ...prev };
-                delete next[product._id];
-                return next;
-            });
-            toast.success("Stock updated successfully");
+            handleCancel(product._id); // Clear all temporary states
+            toast.success("Product updated successfully");
 
         } catch (error) {
-            console.error("Error updating stock:", error);
-            toast.error("Failed to update stock. Please try again.");
+            console.error("Error updating product:", error);
+            toast.error("Failed to update product. Please try again.");
         } finally {
             setUpdatingIds(prev => {
                 const next = new Set(prev);
@@ -187,6 +224,7 @@ export default function InventoryPage() {
                                 <th className="px-6 py-4 rounded-tl-xl">Product</th>
                                 <th className="px-6 py-4 text-center">SKU</th>
                                 <th className="px-6 py-4 text-center">Current Stock</th>
+                                <th className="px-6 py-4 text-center">Threshold</th>
                                 <th className="px-6 py-4 text-center">Status</th>
                                 <th className="px-6 py-4 text-center">Reason</th>
                                 <th className="px-6 py-4 text-center rounded-tr-xl">Actions</th>
@@ -194,14 +232,22 @@ export default function InventoryPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {isLoading ? (
-                                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
+                                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
                             ) : filteredProducts.length === 0 ? (
-                                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No products found.</td></tr>
+                                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500">No products found.</td></tr>
                             ) : (
                                 filteredProducts.map((product) => {
                                     const currentStock = stockUpdates[product._id] ?? product.stock ?? 0;
-                                    const isChanged = stockUpdates[product._id] !== undefined && stockUpdates[product._id] !== product.stock;
+                                    const currentThreshold = thresholdUpdates[product._id] ?? product.threshold ?? 10;
+
+                                    const stockChanged = stockUpdates[product._id] !== undefined && stockUpdates[product._id] !== product.stock;
+                                    const thresholdChanged = thresholdUpdates[product._id] !== undefined && thresholdUpdates[product._id] !== product.threshold;
+                                    const isChanged = stockChanged || thresholdChanged;
+
                                     const isUpdating = updatingIds.has(product._id);
+
+                                    const numStock = Number(currentStock);
+                                    const numThreshold = Number(currentThreshold);
 
                                     return (
                                         <tr key={product._id} className="hover:bg-gray-50 transition-colors">
@@ -232,23 +278,35 @@ export default function InventoryPage() {
                                                     type="number"
                                                     name='currentStock'
                                                     min="0"
-                                                    value={currentStock === '' ? '' : Number(currentStock).toString()}
+                                                    value={currentStock === '' ? '' : numStock.toString()}
                                                     onChange={(e) => handleStockChange(product._id, e.target.value)}
                                                     onFocus={(e) => e.target.select()}
                                                     className={`w-24 text-center border rounded-lg py-1.5 text-sm outline-none transition
-                                                        ${isChanged ? 'border-lime-500 ring-2 ring-lime-500/20 bg-lime-50' : 'border-gray-200 focus:border-lime-500'}`}
+                                                        ${stockChanged ? 'border-lime-500 ring-2 ring-lime-500/20 bg-lime-50' : 'border-gray-200 focus:border-lime-500'}`}
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <input
+                                                    type="number"
+                                                    name='threshold'
+                                                    min="0"
+                                                    value={currentThreshold === '' ? '' : numThreshold.toString()}
+                                                    onChange={(e) => handleThresholdChange(product._id, e.target.value)}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className={`w-20 text-center border rounded-lg py-1.5 text-sm outline-none transition
+                                                        ${thresholdChanged ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50' : 'border-gray-200 focus:border-blue-500'}`}
                                                 />
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                    ${Number(currentStock) > 10 ? 'bg-green-100 text-green-800' :
-                                                        Number(currentStock) > 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    ${numStock > numThreshold ? 'bg-green-100 text-green-800' :
+                                                        numStock > 0 ? 'bg-yellow-100 text-yellow-800' :
                                                             'bg-red-100 text-red-800'}`}>
-                                                    {Number(currentStock) > 10 ? 'In Stock' : Number(currentStock) > 0 ? 'Low Stock' : 'Out of Stock'}
+                                                    {numStock > numThreshold ? 'In Stock' : numStock > 0 ? 'Low Stock' : 'Out of Stock'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                {isChanged ? (
+                                                {stockChanged ? (
                                                     <div className="w-full mx-auto">
                                                         <CustomSelect
                                                             options={ADJUSTMENT_REASONS.map(r => ({ label: r, value: r }))}
@@ -259,7 +317,7 @@ export default function InventoryPage() {
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-gray-400 text-sm">—</span>
+                                                    <span className="text-gray-400 text-sm">{isChanged ? '(No stock change)' : '—'}</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-center h-16">
@@ -274,7 +332,7 @@ export default function InventoryPage() {
                                                             <XMarkIcon className="w-4 h-4" />Cancel
                                                         </button>
                                                         <button
-                                                            onClick={() => handleUpdateStock(product)}
+                                                            onClick={() => handleSaveChanges(product)}
                                                             disabled={isUpdating}
                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lime-500 text-white text-sm font-medium rounded-md hover:bg-lime-600 transition shadow-sm disabled:opacity-50"
                                                         >

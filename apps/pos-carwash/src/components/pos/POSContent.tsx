@@ -17,15 +17,17 @@ interface POSContentProps {
     initialCustomers: any[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     initialEmployees: any[];
+    initialInventory?: Record<string, number>;
 }
 
 /**
  * Inner component that uses the cart context
  */
-function POSLayout({ initialServices, initialProducts, initialCategories }: {
+function POSLayout({ initialServices, initialProducts, initialCategories, initialInventory = {} }: {
     initialServices: Service[];
     initialProducts: Product[];
     initialCategories: Category[];
+    initialInventory?: Record<string, number>;
 }) {
     const { isCrewSidebarOpen, closeCrewSidebar } = useCart();
 
@@ -37,7 +39,12 @@ function POSLayout({ initialServices, initialProducts, initialCategories }: {
                 <div className={`flex-1 overflow-hidden h-full bg-white flex flex-col scrollbar-hide transition-all duration-300 relative ${isCrewSidebarOpen ? 'opacity-50 pointer-events-none' : ''
                     }`}>
                     {/* POSGrid reads products and uses the cart context to add items */}
-                    <POSGrid initialServices={initialServices} initialProducts={initialProducts} initialCategories={initialCategories} />
+                    <POSGrid
+                        initialServices={initialServices}
+                        initialProducts={initialProducts}
+                        initialCategories={initialCategories}
+                        initialInventory={initialInventory}
+                    />
 
                     {/* Dimming Overlay - Clicking it closes the crew sidebar */}
                     {isCrewSidebarOpen && (
@@ -58,13 +65,14 @@ function POSLayout({ initialServices, initialProducts, initialCategories }: {
  * POSContent serves as the client-side root for the POS terminal.
  * It initializes the CartProvider (state) and lays out the ProductGrid and CartPanel.
  */
-export function POSContent({ initialServices, initialProducts, initialCategories, initialCustomers, initialEmployees }: POSContentProps) {
+export function POSContent({ initialServices, initialProducts, initialCategories, initialCustomers, initialEmployees, initialInventory }: POSContentProps) {
     return (
         <CartProvider initialCustomers={initialCustomers} initialEmployees={initialEmployees}>
             <POSLayout
                 initialServices={initialServices}
                 initialProducts={initialProducts}
                 initialCategories={initialCategories}
+                initialInventory={initialInventory}
             />
         </CartProvider>
     );
