@@ -10,6 +10,7 @@ export interface RoleFormData {
     displayName: string;
     permissions: string[];
     description: string;
+    assignments?: string[];
 }
 
 interface RoleFormProps {
@@ -52,6 +53,17 @@ export default function RoleForm({
                 return { ...prev, permissions: prev.permissions.filter(p => p !== perm) };
             } else {
                 return { ...prev, permissions: [...prev.permissions, perm] };
+            }
+        });
+    };
+
+    const toggleAssignment = (assign: string) => {
+        setFormData(prev => {
+            const current = prev.assignments || [];
+            if (current.includes(assign)) {
+                return { ...prev, assignments: current.filter(a => a !== assign) };
+            } else {
+                return { ...prev, assignments: [...current, assign] };
             }
         });
     };
@@ -125,6 +137,25 @@ export default function RoleForm({
                                 <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900">{perm.label}</span>
                             </label>
                         ))}
+                    </div>
+                </div>
+
+                {/* Assignments */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Assignments & Visibility</label>
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-2">
+                        <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-blue-50 rounded-lg transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={formData.assignments?.includes('pos_crew')}
+                                onChange={() => toggleAssignment('pos_crew')}
+                                className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                            />
+                            <div>
+                                <span className="block text-sm font-bold text-gray-900">Assignable Crew (POS)</span>
+                                <span className="block text-xs text-gray-500">Allows employees with this role to be assigned to services/tickets in the POS.</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 

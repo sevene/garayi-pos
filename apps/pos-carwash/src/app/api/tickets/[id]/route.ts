@@ -56,20 +56,38 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             return NextResponse.json({ error: 'Failed to update ticket' }, { status: 404 }); // or 500
         }
 
+        // Fetch employees for name resolution (to build snapshots)
+        const { results: employees } = await db.prepare('SELECT id, name FROM employees').all();
+        const crewMap = new Map();
+        if (employees) {
+            employees.forEach((e: any) => crewMap.set(String(e.id), e.name));
+        }
+
         // Update Items (delete all and re-insert)
         // Similar to customer vehicles, it's safer to full sync for a cart
         if (body.items && Array.isArray(body.items)) {
             await db.prepare('DELETE FROM ticket_items WHERE ticket_id = ?').bind(id).run();
 
             const stmt = db.prepare(`
-                INSERT INTO ticket_items (ticket_id, product_id, product_name, quantity, unit_price, item_type, item_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ticket_items (ticket_id, product_id, product_name, quantity, unit_price, item_type, item_id, crew_snapshot)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `);
             const batch = body.items.map((item: any) => {
                 let itemId = item.productId;
                 if (itemId && String(itemId).includes('-')) {
                     itemId = String(itemId).split('-')[0];
                 }
+
+                // Create Crew Snapshot
+                let crewSnapshot = null;
+                if (item.crew && Array.isArray(item.crew) && item.crew.length > 0) {
+                    const snapshot = item.crew.map((cid: string) => ({
+                        id: cid,
+                        name: crewMap.get(String(cid)) || 'Unknown'
+                    }));
+                    crewSnapshot = JSON.stringify(snapshot);
+                }
+
                 return stmt.bind(
                     id,
                     item.productId,
@@ -77,7 +95,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                     item.quantity,
                     item.unitPrice,
                     'service',
-                    itemId
+                    itemId,
+                    crewSnapshot
                 );
             });
 

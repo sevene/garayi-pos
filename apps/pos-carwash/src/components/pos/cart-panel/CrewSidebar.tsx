@@ -61,18 +61,34 @@ const CrewSidebar = () => {
         return cartItems.filter(item => item.sku === 'SRV');
     }, [cartItems]);
 
-    // Filter employees by search
+    // Filter employees by search and role assignment
     const filteredEmployees = useMemo(() => {
-        const crewList = employees.filter((emp: any) =>
-            emp.role !== 'admin' && emp.role !== '1' || employees.length <= 1
-        );
+        let crewList = employees;
+
+        // Filter by Role Assignment if loaded
+        if (roles.length > 0) {
+            crewList = crewList.filter((emp: any) => {
+                const role = roles.find(r => r._id === String(emp.role));
+
+                // If role has explicit assignments, check for 'pos_crew'
+                if (role && role.assignments && Array.isArray(role.assignments)) {
+                    return role.assignments.includes('pos_crew');
+                }
+
+                // Fallback: If no assignments defined (legacy), show everyone except strictly 'admin' system role
+                if (role && role.name === 'admin') return false;
+
+                // This prevents breaking existing setups while allowing new config
+                return true;
+            });
+        }
 
         if (!searchTerm) return crewList;
         const lower = searchTerm.toLowerCase();
         return crewList.filter((emp: any) =>
             emp.name.toLowerCase().includes(lower)
         );
-    }, [searchTerm, employees]);
+    }, [searchTerm, employees, roles]);
 
     // Get crew for currently selected item
     const currentItemCrew = selectedItemId ? getItemCrew(selectedItemId) : [];

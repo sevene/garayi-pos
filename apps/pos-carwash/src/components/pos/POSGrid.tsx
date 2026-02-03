@@ -273,10 +273,10 @@ export function POSGrid({ initialServices, initialProducts, initialCategories }:
                             placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 border border-transparent rounded-full
+                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 border border-gray-200 rounded-full
                                        text-gray-700 placeholder-gray-400
                                        focus:bg-white focus:border-gray-200 focus:ring-2 focus:ring-gray-100 focus:outline-none
-                                       transition-all duration-200 ease-in-out shadow-sm hover:bg-gray-100/80"
+                                       transition-all duration-200 ease-in-out hover:bg-gray-100/80"
                         />
                     </div>
                 </div>

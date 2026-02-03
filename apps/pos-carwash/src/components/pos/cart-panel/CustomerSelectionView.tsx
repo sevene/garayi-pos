@@ -87,12 +87,12 @@ const CustomerSelectionView: React.FC<CustomerSelectionViewProps> = ({ onBack })
                             <div className="mt-3">
                                 <label className="text-xs font-medium text-gray-500 mb-2 block">Link Vehicles to Ticket</label>
                                 <div className="space-y-2">
-                                    {currentCustomer.cars.map((car: any) => {
+                                    {currentCustomer.cars.map((car: any, idx: number) => {
                                         // Check if this plate is currently in the ticket name
                                         const isSelected = currentTicketName.includes(car.plateNumber);
                                         return (
                                             <button
-                                                key={car.id}
+                                                key={car.id || idx}
                                                 onClick={() => {
                                                     let newTicketName = currentTicketName;
                                                     const plate = car.plateNumber;

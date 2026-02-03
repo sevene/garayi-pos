@@ -43,6 +43,7 @@ interface Role {
     displayName: string;
     permissions: string[];
     description: string;
+    assignments?: string[];
 }
 
 const EMPTY_EMPLOYEE_FORM: EmployeeFormData = {
@@ -65,7 +66,8 @@ const EMPTY_ROLE_FORM: RoleFormData = {
     name: '',
     displayName: '',
     permissions: [],
-    description: ''
+    description: '',
+    assignments: []
 };
 
 const AVATAR_COLORS = [
@@ -289,7 +291,8 @@ export default function AdminEmployeesPage() {
             name: role.name,
             displayName: role.displayName || role.name,
             permissions: role.permissions || [],
-            description: role.description || ''
+            description: role.description || '',
+            assignments: role.assignments || []
         });
         setIsRoleModalOpen(true);
     };

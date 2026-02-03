@@ -13,7 +13,8 @@ export async function GET() {
             return NextResponse.json(results.map((r: any) => ({
                 ...r,
                 _id: String(r.id),
-                permissions: r.permissions ? JSON.parse(r.permissions) : []
+                permissions: r.permissions ? JSON.parse(r.permissions) : [],
+                assignments: r.assignments ? JSON.parse(r.assignments) : []
             })));
         } catch (e: any) {
             // If table doesn't exist, return empty array
@@ -36,8 +37,9 @@ export async function POST(req: Request) {
             displayName: string;
             permissions: string[];
             description: string;
+            assignments?: string[];
         };
-        const { name, displayName, permissions, description } = body;
+        const { name, displayName, permissions, description, assignments } = body;
 
         // Ensure table exists (dirty dev hack, but useful if migrations aren't managed)
         await db.prepare(`
@@ -46,13 +48,14 @@ export async function POST(req: Request) {
                 name TEXT,
                 displayName TEXT,
                 permissions TEXT,
-                description TEXT
+                description TEXT,
+                assignments TEXT
             )
         `).run();
 
         const res = await db.prepare(
-            'INSERT INTO roles (name, displayName, permissions, description) VALUES (?, ?, ?, ?) RETURNING *'
-        ).bind(name, displayName, JSON.stringify(permissions || []), description).first();
+            'INSERT INTO roles (name, displayName, permissions, description, assignments) VALUES (?, ?, ?, ?, ?) RETURNING *'
+        ).bind(name, displayName, JSON.stringify(permissions || []), description, JSON.stringify(assignments || [])).first();
 
         // Check if res is valid (SQLite adapter might return slightly different if not careful, but first() logic seems fine)
         if (!res) throw new Error('Failed to insert role');
@@ -60,7 +63,8 @@ export async function POST(req: Request) {
         return NextResponse.json({
             ...res,
             _id: String(res.id),
-            permissions: res.permissions ? JSON.parse(res.permissions as string) : []
+            permissions: res.permissions ? JSON.parse(res.permissions as string) : [],
+            assignments: res.assignments ? JSON.parse(res.assignments as string) : []
         });
     } catch (e) {
         console.error('Failed to create role:', e);

@@ -48,10 +48,6 @@ function POSLayout({ initialServices, initialProducts, initialCategories }: {
                     )}
                 </div>
 
-
-
-                {/* Cart & Checkout Panel (Fixed Width) */}
-                {/* CartPanel reads cart state and displays totals */}
                 <CartPanel />
             </div>
         </div>

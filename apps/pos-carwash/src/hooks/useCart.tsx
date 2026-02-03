@@ -29,6 +29,11 @@ export interface OpenTicket {
         productName: string;
         quantity: number;
         unitPrice: number;
+        sku?: string;
+        itemType?: string;
+        _id?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        crew?: { id: string; name: string }[];
     }[];
     createdAt: string;
     updatedAt: string;
@@ -309,13 +314,27 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     }, [fetchOpenTickets]);
 
     const loadTicket = useCallback((ticket: OpenTicket) => {
+        const loadedCrew: Record<string, string[]> = {};
+
         const loadedItems: CartItem[] = ticket.items.map(item => {
             const displayName = item.productName || `Item ${item.productId.slice(0, 4)}`;
+
+            // Use the specific line-item ID from the DB if available, otherwise fallback to product ID
+            // This ensures we map crew to the specific line item, not the generic product
+            const uniqueItemId = item._id || item.productId;
+
+            // Populate crew
+            if (item.crew && Array.isArray(item.crew)) {
+                loadedCrew[uniqueItemId] = item.crew.map((c: any) => c.id);
+            }
+
+            const sku = item.sku || (item.itemType === 'service' ? 'SRV' : 'TICKET');
+
             return {
                 product: {
                     _id: item.productId,
                     name: displayName,
-                    sku: 'TICKET',
+                    sku: sku,
                     price: item.unitPrice,
                     cost: 0,
                     volume: 0,
@@ -324,13 +343,14 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
                 quantity: item.quantity,
                 price: item.unitPrice,
                 itemTotal: item.unitPrice * item.quantity,
-                _id: item.productId,
+                _id: uniqueItemId,
                 name: displayName,
-                sku: 'TICKET'
+                sku: sku
             };
         });
 
         setCartItems(loadedItems);
+        setItemCrew(loadedCrew);
         setCurrentTicketName(ticket.name);
         setCurrentTicketId(ticket._id);
 
@@ -351,8 +371,8 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
             setCurrentCustomer(null);
         }
 
-        // Set Crew - For now clear, future: load per-item crew from ticket
-        setItemCrew({});
+        // Set Crew
+        // setItemCrew({}); // Removed clear, we set it above now
         setIsCrewSidebarOpen(false);
         setActiveCrewItemId(null);
 
@@ -362,7 +382,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     const buildPayload = useCallback((status: 'PENDING' | 'COMPLETED', nameOverride?: string, paymentMethod?: string) => ({
         status,
         items: cartItems.map(i => ({
-            productId: i._id,
+            productId: i.product._id,
             productName: i.name,
             quantity: i.quantity,
             unitPrice: i.price,

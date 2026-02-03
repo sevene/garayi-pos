@@ -13,12 +13,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             displayName: string;
             permissions: string[];
             description: string;
+            assignments?: string[];
         };
-        const { name, displayName, permissions, description } = body;
+        const { name, displayName, permissions, description, assignments } = body;
 
         const res = await db.prepare(
-            'UPDATE roles SET name = ?, displayName = ?, permissions = ?, description = ? WHERE id = ? RETURNING *'
-        ).bind(name, displayName, JSON.stringify(permissions || []), description, id).first();
+            'UPDATE roles SET name = ?, displayName = ?, permissions = ?, description = ?, assignments = ? WHERE id = ? RETURNING *'
+        ).bind(name, displayName, JSON.stringify(permissions || []), description, JSON.stringify(assignments || []), id).first();
 
         if (!res) {
             return NextResponse.json({ error: 'Role not found' }, { status: 404 });
@@ -27,7 +28,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         return NextResponse.json({
             ...res,
             _id: String(res.id),
-            permissions: res.permissions ? JSON.parse(res.permissions as string) : []
+            permissions: res.permissions ? JSON.parse(res.permissions as string) : [],
+            assignments: res.assignments ? JSON.parse(res.assignments as string) : []
         });
     } catch (e) {
         console.error('Failed to update role:', e);

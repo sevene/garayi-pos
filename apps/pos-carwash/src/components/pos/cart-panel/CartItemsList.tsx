@@ -1,9 +1,9 @@
 import React from 'react';
 import { useCart } from '@/hooks/useCart';
-import { XMarkIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, MinusIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 const CartItemsList = () => {
-    const { cartItems, updateItemQuantity, removeItem, formatCurrency } = useCart();
+    const { cartItems, updateItemQuantity, removeItem, formatCurrency, openCrewSidebar, getItemCrew } = useCart();
     const isEmpty = cartItems.length === 0;
 
     return (
@@ -19,6 +19,8 @@ const CartItemsList = () => {
                 <div>
                     {cartItems.map((item) => {
                         const isService = item.sku === 'SRV';
+                        const assignedCrew = isService ? getItemCrew(item._id) : [];
+
                         return (
                             <div
                                 key={item._id}
@@ -55,13 +57,10 @@ const CartItemsList = () => {
                                         <h4 className="font-semibold text-gray-800 text-sm leading-tight truncate capitalize" title={item.name}>
                                             {item.name}
                                         </h4>
-                                        {isService && (
-                                            <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                                                Service
-                                            </span>
-                                        )}
                                     </div>
                                     <p className="text-xs text-gray-400">{formatCurrency(item.price)} each</p>
+
+
                                 </div>
 
                                 {/* Price + Remove */}

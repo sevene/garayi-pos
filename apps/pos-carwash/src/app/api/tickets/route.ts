@@ -2,10 +2,14 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateTicketNumber, getCurrentMinutePrefix } from '@/lib/ticketNumber';
 
+interface Env {
+    DB: D1Database;
+}
+
 export async function GET() {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = (env as any).DB as D1Database;
+        const db = (env as unknown as Env).DB;
         // 'tickets' table exists in schema.sql
         // We might need to join with ticket_items, but let's start simple
         const { results } = await db.prepare('SELECT * FROM tickets WHERE status != ?').bind('PAID').all();
@@ -35,6 +39,8 @@ export async function GET() {
                 productName: i.product_name,
                 quantity: i.quantity,
                 unitPrice: i.unit_price,
+                itemType: i.item_type || 'service', // Default to service if missing
+                sku: (i.item_type === 'product' ? 'PRD' : 'SRV'), // Infer SKU
                 _id: i.id, // Legacy might need this
                 crew: i.crew_snapshot ? JSON.parse(i.crew_snapshot) : []
             }));
@@ -118,12 +124,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     try {
         const { env } = await getCloudflareContext({ async: true });
-        const db = (env as any).DB as D1Database;
+        const db = (env as unknown as Env).DB;
         const body = await req.json() as any;
 
         console.log("Creating Ticket. Body:", JSON.stringify(body)); // Debug log
 
-        // Insert Ticket
         // Insert Ticket
         // Attempt to parse plate number from name if not provided (Format: Name - Plate1, Plate2)
         let plateNumber = body.plateNumber || null;
