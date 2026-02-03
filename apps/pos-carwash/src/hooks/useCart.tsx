@@ -190,10 +190,7 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     const addItemToCart = useCallback((product: Product) => {
         const price = safeFloat(product.price);
 
-        if (cartItems.length === 0) {
-            setCurrentTicketId(null);
-            setCurrentTicketName('New Order');
-        }
+
 
         setViewMode('CART');
 
