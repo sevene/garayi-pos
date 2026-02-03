@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS products (
   unit_type TEXT, -- 'piece', 'weight/volume'
   cost REAL DEFAULT 0,
   stock_quantity INTEGER DEFAULT 0,
+  low_stock_threshold INTEGER DEFAULT 10,
   show_in_pos INTEGER DEFAULT 1,
   active INTEGER DEFAULT 1,
   image_url TEXT
