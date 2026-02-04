@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/admin/PageHeader';
 import CustomSelect from '@/components/ui/CustomSelect';
 import CustomInput from '@/components/ui/CustomInput';
+import { useOfflineMutation } from '@/hooks/useOfflineMutation';
 
 const EMPTY_CATEGORY: Category = {
     _id: '',
@@ -32,20 +33,30 @@ export default function AdminCategoriesPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { performMutation } = useOfflineMutation();
+
     const fetchCategories = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/api/categories');
+            const res = await fetch('/api/categories?t=' + Date.now(), { cache: 'no-store' });
             if (res.ok) {
-                const data = await res.json();
+                const data = await res.json() as Category[];
                 setCategories(data);
+
+                // Cache to local DB for offline use
+                import('@/lib/db-client').then(({ db }) => {
+                    db.categories.clear().then(() => db.categories.bulkAdd(data));
+                });
             } else {
-                console.warn("Failed to fetch categories");
-                setCategories([]);
+                throw new Error("API Failed");
             }
         } catch (err) {
-            console.error("Failed to fetch categories", err);
-            setCategories([]);
+            console.warn("Offline or API Error, loading local categories...", err);
+            // Fallback to local DB
+            import('@/lib/db-client').then(async ({ db }) => {
+                const local = await db.categories.toArray();
+                if (local.length > 0) setCategories(local as Category[]);
+            });
         } finally {
             setIsLoading(false);
         }
@@ -80,12 +91,19 @@ export default function AdminCategoriesPage() {
         if (!confirm(`Delete category "${name}"?`)) return;
 
         try {
-            const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Failed to delete");
+            const { success, offline } = await performMutation(
+                'categories',
+                'delete',
+                { id: id, _id: id }, // pass both for compatibility
+                '/api/categories'
+            );
 
-            setCategories(prev => prev.filter(c => c._id !== id));
-            if (formData._id === id) handleCancel();
-            toast.success("Category deleted.");
+            if (success) {
+                setCategories(prev => prev.filter(c => c._id !== id));
+                if (formData._id === id) handleCancel();
+                if (offline) toast.warning("Deleted offline (pending sync)");
+                else toast.success("Category deleted.");
+            }
         } catch (err) {
             console.error(err);
             toast.error("Error deleting category.");
@@ -99,27 +117,39 @@ export default function AdminCategoriesPage() {
         setError(null);
 
         try {
-            const method = isEditing ? 'PUT' : 'POST';
-            const endpoint = isEditing
-                ? `/api/categories/${formData._id}`
-                : '/api/categories';
-
+            const type = isEditing ? 'update' : 'create';
             const { _id, ...payload } = formData;
-            const res = await fetch(endpoint, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(isEditing ? formData : payload)
-            });
+            const cleanPayload = isEditing ? formData : payload;
 
-            if (!res.ok) throw new Error("Failed to save");
+            const { success, data, offline } = await performMutation(
+                'categories',
+                type,
+                cleanPayload,
+                '/api/categories'
+            );
 
-            await fetchCategories();
-            handleCancel();
-            toast.success(`Category ${isEditing ? 'updated' : 'created'} successfully.`);
+            if (success) {
+                // Optimistic update of local state
+                if (type === 'create') {
+                    // Data usually contains the new object (with ID if online, with tempID if offline)
+                    setCategories(prev => [...prev, data as Category]);
+                } else {
+                    setCategories(prev => prev.map(c => c._id === formData._id ? (data as Category) : c));
+                }
+
+                handleCancel();
+
+                if (offline) toast.warning(`Saved offline (${type}). Will sync when online.`);
+                else toast.success(`Category ${type}d successfully.`);
+
+                // If online, refresh to be sure we have everything correct (like server generated timestamps)
+                if (!offline) fetchCategories();
+            }
+
         } catch (err) {
             console.error(err);
             setError("Failed to save category. Please try again.");
-            toast.error("Failed to save category. Please try again.");
+            toast.error("Failed to save category.");
         } finally {
             setIsSaving(false);
         }
