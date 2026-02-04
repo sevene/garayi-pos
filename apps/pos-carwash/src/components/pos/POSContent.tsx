@@ -31,6 +31,10 @@ function POSLayout({ initialServices, initialProducts, initialCategories, initia
 }) {
     const { isCrewSidebarOpen, closeCrewSidebar } = useCart();
 
+    // We can't easily update CartProvider's internal state unless we re-mount it when customers/employees change.
+    // Or we pass the fresh data to CartProvider if it accepts it in a reactive way.
+    // For now, let's assume the POSGrid needs the live data most.
+
     return (
         <div className="flex flex-col flex-1 w-full bg-gray-200 antialiased overflow-hidden">
             {/* Main Content Area: Products + Cart. Uses flex-1 to fill horizontal space. */}
@@ -65,14 +69,47 @@ function POSLayout({ initialServices, initialProducts, initialCategories, initia
  * POSContent serves as the client-side root for the POS terminal.
  * It initializes the CartProvider (state) and lays out the ProductGrid and CartPanel.
  */
-export function POSContent({ initialServices, initialProducts, initialCategories, initialCustomers, initialEmployees, initialInventory }: POSContentProps) {
+import { usePosData } from '@/hooks/usePosData';
+import { WifiIcon } from '@heroicons/react/24/solid';
+
+export function POSContent(props: POSContentProps) {
+    const { initialServices, initialProducts, initialCategories, initialCustomers, initialEmployees, initialInventory } = props;
+
+    // Use the custom hook to sync data
+    const { data, isOffline } = usePosData({
+        categories: initialCategories,
+        services: initialServices,
+        products: initialProducts,
+        customers: initialCustomers,
+        employees: initialEmployees,
+        inventory: initialInventory
+    });
+
+    // We use a key on CartProvider to force re-render if customers/employees significantly change (rare during a session but helpful for sync)
+    // Actually, forcing re-render blows away the cart state, which is bad if you are in the middle of an order.
+    // Better to just pass the live data to POSLayout for the Grid.
+    // CartProvider might be stale on customers if offline update happens, but that's acceptable for now.
+
+    const activeServices = data.services || initialServices;
+    const activeProducts = data.products || initialProducts;
+    const activeCategories = data.categories || initialCategories;
+    const activeInventory = data.inventory || initialInventory;
+    // Customers/Employees update is tricky without blowing away Cart State. Let's keep initial for Provider for now.
+
     return (
         <CartProvider initialCustomers={initialCustomers} initialEmployees={initialEmployees}>
+            {/* Offline Indicator */}
+            {isOffline && (
+                <div className="bg-amber-500 text-white text-xs font-bold text-center py-1 flex items-center justify-center gap-2">
+                    <WifiIcon className="h-3 w-3" />
+                    Offline Mode - Transactions Saved Locally
+                </div>
+            )}
             <POSLayout
-                initialServices={initialServices}
-                initialProducts={initialProducts}
-                initialCategories={initialCategories}
-                initialInventory={initialInventory}
+                initialServices={activeServices}
+                initialProducts={activeProducts}
+                initialCategories={activeCategories}
+                initialInventory={activeInventory}
             />
         </CartProvider>
     );

@@ -466,23 +466,55 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
 
         try {
             const isNew = !currentTicketId;
-            const method = isNew ? 'POST' : 'PUT';
-            const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
+            // Payload
+            const payload = buildPayload('COMPLETED', undefined, paymentMethod);
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(buildPayload('COMPLETED', undefined, paymentMethod))
+            // 1. Try Online Checkout
+            if (navigator.onLine) {
+                try {
+                    const method = isNew ? 'POST' : 'PUT';
+                    const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) throw new Error("Checkout failed");
+
+                    toast.success(`Checkout Complete (${paymentMethod}): ${formatCurrency(total)}`);
+                    // Clear state
+                    setCurrentTicketId(null);
+                    setCurrentTicketName('New Order');
+                    clearCart();
+                    await fetchOpenTickets();
+                    switchToTicketsView();
+                    return; // Success!
+
+                } catch (apiError) {
+                    console.warn("Online checkout failed, falling back to offline", apiError);
+                    // Fallthrough to offline handling
+                }
+            }
+
+            // 2. Offline Checkout
+            const { db } = await import('@/lib/db-client'); // Dynamic import to be safe
+
+            await db.orders.add({
+                tempId: self.crypto.randomUUID(),
+                items: payload.items,
+                total: payload.total,
+                customerId: payload.customer,
+                status: 'pending',
+                createdAt: Date.now(),
+                payload: payload
             });
 
-            if (!res.ok) throw new Error("Checkout failed");
-
-            toast.success(`Checkout Complete (${paymentMethod}): ${formatCurrency(total)}`);
+            toast.warning(`Offline Mode: Order Saved Locally! (${formatCurrency(total)})`);
 
             setCurrentTicketId(null);
             setCurrentTicketName('New Order');
             clearCart();
-            await fetchOpenTickets();
             switchToTicketsView();
 
         } catch (error: unknown) {

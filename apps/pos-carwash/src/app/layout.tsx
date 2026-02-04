@@ -42,6 +42,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: storeName,
     description: "Point of Sale System",
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: storeName,
+    },
   };
 }
 

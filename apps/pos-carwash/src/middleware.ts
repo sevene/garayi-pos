@@ -13,7 +13,17 @@ export default async function middleware(req: NextRequest) {
 
     // 3. Decrypt the session from the cookie
     const cookie = req.cookies.get('session')?.value;
+
+    if (path.startsWith('/pos') || path.startsWith('/admin')) {
+        console.log(`[Middleware] Checking route: ${path}`);
+        console.log(`[Middleware] Cookie present: ${!!cookie}`);
+    }
+
     const session = cookie ? await verifySession(cookie) : null;
+
+    if (cookie && !session && (path.startsWith('/pos') || path.startsWith('/admin'))) {
+        console.log('[Middleware] Session verification failed (invalid signature or expired)');
+    }
 
     // 4. Redirect
     // If trying to access a protected route without a session

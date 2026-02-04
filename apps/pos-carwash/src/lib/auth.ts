@@ -24,7 +24,8 @@ export async function verifySession(token: string) {
     try {
         const { payload } = await jwtVerify(token, JWT_SECRET);
         return payload;
-    } catch (_error) {
+    } catch (error) {
+        console.error('Session verification failed:', error);
         return null;
     }
 }
