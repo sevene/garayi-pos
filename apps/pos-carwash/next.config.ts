@@ -5,6 +5,45 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
+  workboxOptions: {
+    disableDevLogs: true,
+    runtimeCaching: [
+      {
+        // Cache next.js static assets
+        urlPattern: /^https?.+?\/_next\/static\/.+$/,
+        handler: 'StaleWhileRevalidate',
+      },
+      {
+        // Cache images
+        urlPattern: /^https?.+?\.(?:png|jpg|jpeg|svg|webp|gif|ico)$/,
+        handler: 'StaleWhileRevalidate',
+      },
+      {
+        // Cache API calls (except sync which we handle manually, but good to have fallback)
+        urlPattern: /^https?.+?\/api\/.+$/,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'api-cache',
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60 // 1 day
+          }
+        }
+      },
+      {
+        // Cache navigation routes (PAGES) - Critical for offline navigation
+        urlPattern: ({ request }) => request.mode === 'navigate',
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'pages-cache',
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60 // 24 hours
+          }
+        }
+      }
+    ]
+  }
 });
 
 const nextConfig: NextConfig = {

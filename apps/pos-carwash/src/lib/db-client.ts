@@ -37,7 +37,22 @@ export class POSDatabase extends Dexie {
             inventory: 'id', // productId
             orders: '++id, tempId, status, createdAt' // 'status' index for finding pending orders
         });
+
+        // Version 2: Add mutations table for global offline CRUD
+        this.version(2).stores({
+            mutations: '++id, type, collection, status, createdAt' // type: 'create'|'update'|'delete', status: 'pending'
+        });
     }
+
+    mutations!: Table<{
+        id?: number;
+        type: 'create' | 'update' | 'delete';
+        collection: 'categories' | 'services' | 'products' | 'customers' | 'employees';
+        payload: any;
+        status: 'pending' | 'synced' | 'error';
+        createdAt: number;
+        tempId?: string; // For updates/deletes of locally created items
+    }>;
 }
 
 export const db = new POSDatabase();
