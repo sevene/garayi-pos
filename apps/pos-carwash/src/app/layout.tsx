@@ -5,6 +5,7 @@ import "./globals.css";
 import { MainNav } from "../components/MainNav";
 import { Toaster } from 'sonner';
 import DynamicTitle from "@/components/DynamicTitle";
+import GlobalSync from "@/components/GlobalSync";
 
 const lato = Lato({
   subsets: ['latin'],
@@ -59,6 +60,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${lato.variable} flex flex-col h-screen overflow-hidden`}>
+        <GlobalSync />
         <DynamicTitle />
         <MainNav />
         {/* This is where the AdminLayout component is rendered when navigating to /admin
