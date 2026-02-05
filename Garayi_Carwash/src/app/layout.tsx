@@ -60,7 +60,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${lato.variable} flex flex-col h-screen overflow-hidden`}>
-        <GlobalSync />
         <DynamicTitle />
         <MainNav />
         {/* This is where the AdminLayout component is rendered when navigating to /admin

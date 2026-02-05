@@ -3,15 +3,19 @@
 import { useEffect } from 'react';
 import { db } from '@/lib/db-client';
 import { toast } from 'sonner';
+import { useCart } from '@/hooks/useCart';
 
 export default function GlobalSync() {
+    // expose fetchOpenTickets to refresh UI after sync
+    const { fetchOpenTickets } = useCart();
+
     useEffect(() => {
         const syncPendingOrders = async () => {
             // 1. Check for pending orders
             // Uses the 'status' index we defined in db-client
             const pendingOrders = await db.orders.where('status').equals('pending').toArray();
 
-            if (pendingOrders.length === 0) return;
+            if (pendingOrders.length === 0) return false;
 
             console.log(`Found ${pendingOrders.length} pending offline orders. Syncing...`);
             let syncedCount = 0;
@@ -42,12 +46,14 @@ export default function GlobalSync() {
 
             if (syncedCount > 0) {
                 toast.success(`Synced ${syncedCount} offline orders!`);
+                return true;
             }
+            return false;
         };
 
         const syncPendingMutations = async () => {
             const pendingMutations = await db.mutations.where('status').equals('pending').toArray();
-            if (pendingMutations.length === 0) return;
+            if (pendingMutations.length === 0) return false;
 
             console.log(`Found ${pendingMutations.length} pending mutations. Syncing...`);
             let mutationCount = 0;
@@ -85,13 +91,21 @@ export default function GlobalSync() {
 
             if (mutationCount > 0) {
                 toast.success(`Synced ${mutationCount} offline changes`);
+                return true;
             }
+            return false;
         };
 
-        const runGlobalSync = () => {
+        const runGlobalSync = async () => {
             if (navigator.onLine) {
-                syncPendingOrders();
-                syncPendingMutations();
+                const ordersSynced = await syncPendingOrders();
+                const mutationsSynced = await syncPendingMutations();
+
+                // If anything changed, refresh the cart view
+                if (ordersSynced || mutationsSynced) {
+                    console.log("Sync complete, refreshing tickets list...");
+                    fetchOpenTickets();
+                }
             }
         };
 
@@ -109,7 +123,7 @@ export default function GlobalSync() {
         return () => {
             window.removeEventListener('online', handleOnline);
         };
-    }, []);
+    }, [fetchOpenTickets]);
 
     return null; // Headless component
 }

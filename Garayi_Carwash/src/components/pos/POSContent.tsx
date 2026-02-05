@@ -8,6 +8,7 @@ import { Category } from '@/lib/categories';
 import { CartProvider, useCart } from '@/hooks/useCart';
 import { POSGrid } from './POSGrid';
 import { CartPanel } from './CartPanel';
+import GlobalSync from '@/components/GlobalSync';
 
 interface POSContentProps {
     initialServices: Service[];
@@ -96,8 +97,11 @@ export function POSContent(props: POSContentProps) {
     const activeInventory = data.inventory || initialInventory;
     // Customers/Employees update is tricky without blowing away Cart State. Let's keep initial for Provider for now.
 
+    // Customers/Employees update is tricky without blowing away Cart State. Let's keep initial for Provider for now.
+
     return (
         <CartProvider initialCustomers={initialCustomers} initialEmployees={initialEmployees}>
+            <GlobalSync />
             {/* Offline Indicator */}
             {isOffline && (
                 <div className="bg-amber-500 text-white text-xs font-bold text-center py-1 flex items-center justify-center gap-2">
