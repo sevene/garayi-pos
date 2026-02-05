@@ -294,12 +294,53 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
     const fetchOpenTickets = useCallback(async () => {
         setIsTicketsLoading(true);
         try {
-            const res = await fetch('/api/tickets', { cache: 'no-store' });
-            if (!res.ok) throw new Error("Failed to fetch tickets");
-            const data = await res.json() as OpenTicket[];
-            setOpenTickets(data);
+            let tickets: OpenTicket[] = [];
+
+            // 1. Try Online Fetch
+            if (navigator.onLine) {
+                try {
+                    const res = await fetch('/api/tickets', { cache: 'no-store' });
+                    if (res.ok) {
+                        tickets = await res.json();
+                    }
+                } catch (e) {
+                    console.warn("Fetch tickets failed", e);
+                }
+            }
+
+            // 2. Merge with Offline Tickets (db.orders with status='pending')
+            if (typeof window !== 'undefined') {
+                const { db } = await import('@/lib/db-client');
+                const localOrders = await db.orders.where('status').equals('pending').toArray();
+
+                const localTickets = localOrders.map(o => ({
+                    _id: o.tempId,
+                    name: o.payload.name || 'Offline Ticket',
+                    total: o.total,
+                    cashierId: o.payload.cashierId || 'POS-Offline',
+                    timestamp: new Date(o.createdAt).toISOString(),
+                    items: o.items.map((i: any) => ({
+                        ...i,
+                        // Ensure items have necessary display fields
+                        productName: i.productName || 'Item'
+                    })),
+                    createdAt: new Date(o.createdAt).toISOString(),
+                    updatedAt: new Date(o.createdAt).toISOString(),
+                    status: 'PENDING' as const,
+                    customer: o.customerId,
+                    crew: o.payload.crew
+                }));
+
+                // Basic protection against duplicates if server has synced but local hasn't updated yet (rare with proper sync)
+                const existingIds = new Set(tickets.map(t => t._id));
+                const uniqueLocal = localTickets.filter(t => !existingIds.has(t._id));
+
+                tickets = [...tickets, ...uniqueLocal];
+            }
+
+            setOpenTickets(tickets);
         } catch (err) {
-            console.error(err);
+            console.error("Error in fetchOpenTickets", err);
         } finally {
             setIsTicketsLoading(false);
         }
@@ -403,27 +444,80 @@ const useCartState = (initialCustomers: any[] = [], initialEmployees: any[] = []
         setIsProcessing(true);
         setCheckoutError(null);
 
+        const isNew = !currentTicketId;
+        const payload = buildPayload('PENDING', nameToSave);
+
         try {
-            const isNew = !currentTicketId;
-            const method = isNew ? 'POST' : 'PUT';
-            const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
+            let onlineSuccess = false;
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(buildPayload('PENDING', nameToSave))
-            });
+            // 1. Try Online
+            if (navigator.onLine) {
+                try {
+                    const method = isNew ? 'POST' : 'PUT';
+                    const url = isNew ? '/api/tickets' : `/api/tickets/${currentTicketId}`;
 
-            if (!res.ok) throw new Error("Save failed");
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-            const data = await res.json() as { _id: string; name: string };
+                    if (res.ok) {
+                        const data = await res.json() as { _id: string; name: string };
+                        setCurrentTicketId(data._id);
+                        setCurrentTicketName(data.name);
+                        toast.success(`Ticket ${isNew ? 'Created' : 'Updated'}`);
+                        onlineSuccess = true;
+                    }
+                } catch (error) {
+                    console.warn("Online save failed, using offline fallback", error);
+                }
+            }
 
-            setCurrentTicketId(data._id);
-            setCurrentTicketName(data.name);
+            // 2. Offline Fallback
+            if (!onlineSuccess) {
+                const { db } = await import('@/lib/db-client');
+                const tempId = isNew ? `temp_${self.crypto.randomUUID()}` : currentTicketId!;
 
-            toast.success(`Ticket ${isNew ? 'Created' : 'Updated'}`);
+                if (isNew) {
+                    await db.orders.add({
+                        tempId,
+                        items: payload.items,
+                        total: payload.total,
+                        customerId: payload.customer,
+                        status: 'pending',
+                        createdAt: Date.now(),
+                        payload: { ...payload, name: nameToSave }
+                    });
+                    toast.info("Offline: Ticket Saved Locally");
+                } else {
+                    // Check if updating a local ticket or server ticket
+                    const existingLocal = await db.orders.where('tempId').equals(tempId).first();
 
-            fetchOpenTickets();
+                    if (existingLocal) {
+                        // Update local record
+                        await db.orders.update(existingLocal.id!, {
+                            items: payload.items,
+                            total: payload.total,
+                            customerId: payload.customer,
+                            payload: { ...payload, name: nameToSave }
+                        });
+                        toast.info("Offline: Local Ticket Updated");
+                    } else {
+                        // Server ticket -> Queue Mutation
+                        await db.mutations.add({
+                            type: 'update',
+                            collection: 'tickets',
+                            payload: { ...payload, id: currentTicketId },
+                            status: 'pending',
+                            createdAt: Date.now()
+                        });
+                        toast.info("Offline: Update Queued for Sync");
+                    }
+                }
+            }
+
+            await fetchOpenTickets();
             switchToTicketsView();
             clearCart();
 

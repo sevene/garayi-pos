@@ -47,7 +47,7 @@ export class POSDatabase extends Dexie {
     mutations!: Table<{
         id?: number;
         type: 'create' | 'update' | 'delete';
-        collection: 'categories' | 'services' | 'products' | 'customers' | 'employees';
+        collection: 'categories' | 'services' | 'products' | 'customers' | 'employees' | 'tickets';
         payload: any;
         status: 'pending' | 'synced' | 'error';
         createdAt: number;
