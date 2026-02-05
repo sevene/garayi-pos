@@ -21,7 +21,8 @@ export function useOnlineStatus() {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-                const res = await fetch('/api/health', {
+                // Add timestamp to bypass Service Worker cache
+                const res = await fetch(`/api/health?_t=${Date.now()}`, {
                     method: 'GET',
                     signal: controller.signal,
                     cache: 'no-store',
