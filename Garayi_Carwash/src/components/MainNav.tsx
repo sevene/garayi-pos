@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { BellIcon } from '@heroicons/react/24/outline';
 import { useNotifications } from '@/hooks/useNotifications';
+import { NetworkStatus } from './NetworkStatus';
 
 export function MainNav() {
     const pathname = usePathname();
@@ -49,6 +50,9 @@ export function MainNav() {
 
             {/* Navigation and Actions */}
             <div className="flex items-center gap-6">
+
+                {/* Network Status */}
+                <NetworkStatus />
 
                 {/* Notification Bell */}
                 <button className="relative p-1.5 text-gray-300 hover:text-white transition-colors">
