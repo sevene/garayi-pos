@@ -68,12 +68,12 @@ export function MainNav() {
                 <nav className="flex space-x-2">
 
                     {/* POS Link (Root page) */}
-                    <Link href="/pos" className={getLinkClasses('/pos')}>
+                    <Link href="/pos" className={getLinkClasses('/pos')} prefetch={false}>
                         POS
                     </Link>
 
                     {/* Admin Link */}
-                    <Link href="/admin" className={getLinkClasses('/admin')}>
+                    <Link href="/admin" className={getLinkClasses('/admin')} prefetch={false}>
                         Admin
                     </Link>
 
