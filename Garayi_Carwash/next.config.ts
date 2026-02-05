@@ -22,6 +22,11 @@ const withPWA = withPWAInit({
         handler: 'StaleWhileRevalidate',
       },
       {
+        // FORCE NETWORK ONLY for health check so we don't get cached 200 responses when offline
+        urlPattern: ({ url }) => url.pathname === '/api/health',
+        handler: 'NetworkOnly',
+      },
+      {
         // Cache API calls (except sync which we handle manually, but good to have fallback)
         urlPattern: /^https?.+?\/api\/.+$/,
         handler: 'NetworkFirst',
